@@ -1,0 +1,43 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: #060B18;
+  color: #D8E4F0;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Keyframes used across components */
+@keyframes twinkle {
+  0%, 100% { opacity: var(--star-opacity, 0.4); }
+  50%       { opacity: calc(var(--star-opacity, 0.4) * 0.2); }
+}
+
+@keyframes orbitBreath {
+  0%, 100% { r: 7;  opacity: 0.25; }
+  50%       { r: 14; opacity: 0.08; }
+}
+
+@keyframes orbitPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes reactionRise {
+  0%   { transform: translateY(0)   scale(1);   opacity: 1; }
+  100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pathDash {
+  to { stroke-dashoffset: -48; }
+}
