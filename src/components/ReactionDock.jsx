@@ -153,7 +153,7 @@ export default function ReactionDock({ viewers }) {
               <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
               <span style={{
                 fontSize:      12,
-                color:         '#1A2E44',
+                color:         '#4A6A88',
                 fontFamily:    "'JetBrains Mono', monospace",
                 minHeight:     12,
               }}>
@@ -168,7 +168,7 @@ export default function ReactionDock({ viewers }) {
             textAlign:     'center',
             marginTop:     14,
             fontSize:      12,
-            color:         '#111E2E',
+            color:         '#4A6A88',
             letterSpacing: '1px',
           }}>
             {formatNum(total)} total reactions worldwide
