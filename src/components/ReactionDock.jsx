@@ -101,8 +101,8 @@ export default function ReactionDock({ viewers }) {
           flexWrap:       'wrap',
           gap:            8,
         }}>
-          <div style={{ fontSize: 11, color: '#1E3050', letterSpacing: '1px' }}>
-            <span style={{ color: '#1D6A40' }}>●</span>{' '}
+          <div style={{ fontSize: 13, color: '#4A6A88', letterSpacing: '1px' }}>
+            <span style={{ color: '#2AAA64' }}>●</span>{' '}
             <span style={{ color: '#2A4060' }}>
               {formatNum(viewers)}
             </span>{' '}
@@ -110,7 +110,7 @@ export default function ReactionDock({ viewers }) {
           </div>
           {ticker > 0 && (
             <div style={{
-              fontSize:      10,
+              fontSize:      12,
               color:         '#1A2E44',
               letterSpacing: '0.5px',
               animation:     'fadeSlideUp .3s ease',
@@ -152,7 +152,7 @@ export default function ReactionDock({ viewers }) {
             >
               <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
               <span style={{
-                fontSize:      10,
+                fontSize:      12,
                 color:         '#1A2E44',
                 fontFamily:    "'JetBrains Mono', monospace",
                 minHeight:     12,
@@ -167,7 +167,7 @@ export default function ReactionDock({ viewers }) {
           <div style={{
             textAlign:     'center',
             marginTop:     14,
-            fontSize:      9.5,
+            fontSize:      12,
             color:         '#111E2E',
             letterSpacing: '1px',
           }}>

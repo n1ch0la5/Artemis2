@@ -72,7 +72,6 @@ export default function App() {
   const dist     = telemetry?.distanceFromEarth ?? estimateDistanceFromEarth(progress)
   const toMoon   = telemetry?.distanceToMoon    ?? estimateDistanceToMoon(dist)
   const velocity = telemetry?.velocity          ?? estimateVelocity(progress)
-  
   const dataAgeSecs = telemetry?.unixTimestamp
     ? Math.round((now / 1000) - telemetry.unixTimestamp)
     : null
@@ -96,20 +95,20 @@ export default function App() {
 
         {/* ── Eyebrow ── */}
         <div style={{
-          fontSize:      10,
+          fontSize:      13,
           letterSpacing: '3.5px',
-          color:         '#142030',
+          color:         '#5A7A94',
           textTransform: 'uppercase',
           textAlign:     'center',
           marginBottom:  14,
         }}>
           NASA · Artemis II
-          {day && <span style={{ color: '#1E3A54' }}> · Mission Day {day}</span>}
+          {day && <span style={{ color: '#5A8AAA' }}> · Mission Day {day}</span>}
           {launched && !landed && (
-            <span style={{ color: '#1D5C38', marginLeft: 12 }}>● LIVE</span>
+            <span style={{ color: '#2AAA64', marginLeft: 12 }}>● LIVE</span>
           )}
           {landed && (
-            <span style={{ color: '#2A4060', marginLeft: 12 }}>· MISSION COMPLETE</span>
+            <span style={{ color: '#5A8AAA', marginLeft: 12 }}>· MISSION COMPLETE</span>
           )}
         </div>
 
@@ -128,17 +127,6 @@ export default function App() {
           <em style={{ fontStyle: 'italic', fontWeight: 400 }}>Orion</em>{' '}
           right now?
         </h1>
-        <h2 style={{
-          fontFamily:    "'Cormorant Garamond', serif",
-          fontWeight:    300,
-          fontSize:      'clamp(18px, 5.5vw, 36px)',
-          textAlign:     'center',
-          color:         '#808080',
-          letterSpacing: '-0.5px',
-          marginBottom:  28,
-          lineHeight:    1,
-        }}>
-          Artemis II Mission Real-Time Tracker</h2>
 
         {/* ── Trajectory ── */}
         <div style={{ marginBottom: 28 }}>
@@ -164,12 +152,40 @@ export default function App() {
         {/* ── Social reactions ── */}
         <ReactionDock viewers={viewers} />
 
+        {/* ── Ad ── */}
+        <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 8 }}>
+          <a
+            href="https://d4a3d62wwwzcay82gfo5g153qb.hop.clickbank.net/?&traffic_source=artemis2&traffic_type=organic"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 12,
+              opacity: 0.7, transition: 'opacity .2s',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+          >
+            <img
+              src="/derila-ergo-1x-pillow.avif"
+              alt="Sponsored"
+              style={{ height: 40, borderRadius: 6 }}
+            />
+            <span style={{
+              fontSize: 13, color: '#4A6A88', letterSpacing: '0.5px',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              Sleep like you're in zero gravity · Derila Pillow · #Ad
+            </span>
+          </a>
+        </div>
+
         {/* ── Footer ── */}
         <div style={{
           textAlign:     'center',
           marginTop:     36,
-          fontSize:      9,
-          color:         '#0C1724',
+          fontSize:      12,
+          color:         '#4A6A80',
           letterSpacing: '2px',
           textTransform: 'uppercase',
           lineHeight:    1.8,
@@ -178,8 +194,12 @@ export default function App() {
           <br />
           April 1–10, 2026 · Free-return lunar flyby · 685,000 mi round trip
           <br />
-          <span style={{ color: '#081018' }}>
+          <span style={{ color: '#3A5A70' }}>
             UTC {fmtUTC(now)}
+          </span>
+          <br />
+          <span style={{ color: '#3A5A70', letterSpacing: '1.5px', fontSize: 11 }}>
+            Not affiliated with or endorsed by NASA
           </span>
         </div>
       </div>

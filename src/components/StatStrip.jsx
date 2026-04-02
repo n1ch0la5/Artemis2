@@ -11,32 +11,15 @@ export default function StatStrip({ now, progress, launched, telemetry, phaseIdx
   const source   = telemetry?.source            ?? 'calculated'
 
   const stats = [
-    {
-      label: 'ELAPSED',
-      value: launched ? formatElapsed(elapsed) : 'T-0',
-      wide:  true,
-    },
-    {
-      label: 'FROM EARTH',
-      value: launched ? `${formatNum(dist)} mi` : '—',
-    },
-    {
-      label: 'TO MOON',
-      value: launched ? `${formatNum(toMoon)} mi` : '—',
-    },
-    {
-      label: 'VELOCITY',
-      value: launched ? `${formatNum(velocity)} mph` : '—',
-    },
-    {
-      label: 'PHASE',
-      value: phase.short,
-      serif: true,
-    },
+    { label: 'ELAPSED',    value: launched ? formatElapsed(elapsed) : 'T-0', wide: true },
+    { label: 'FROM EARTH', value: launched ? `${formatNum(dist)} mi` : '—' },
+    { label: 'TO MOON',    value: launched ? `${formatNum(toMoon)} mi` : '—' },
+    { label: 'VELOCITY',   value: launched ? `${formatNum(velocity)} mph` : '—' },
+    { label: 'PHASE',      value: phase.short, serif: true },
     {
       label: next.id !== phase.id ? `UNTIL ${next.short.toUpperCase()}` : 'STATUS',
       value: next.id !== phase.id ? formatCountdown(next.ms - now) : 'Complete',
-      gold:  true,
+      gold: true,
     },
   ]
 
@@ -46,8 +29,8 @@ export default function StatStrip({ now, progress, launched, telemetry, phaseIdx
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '1px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.04)',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 12,
         overflow: 'hidden',
       }}>
@@ -59,21 +42,20 @@ export default function StatStrip({ now, progress, launched, telemetry, phaseIdx
             animationDelay: `${i * 0.07}s`,
           }}>
             <div style={{
-              fontSize: 8.5,
+              fontSize: 12,
               letterSpacing: '2px',
-              color: '#182438',
+              color: '#4A6A88',
               marginBottom: 6,
               textTransform: 'uppercase',
             }}>
               {s.label}
             </div>
             <div style={{
-              fontSize: s.serif ? 17 : 13,
+              fontSize: s.serif ? 20 : 17,
               fontFamily: s.serif
                 ? "'Cormorant Garamond', serif"
                 : "'JetBrains Mono', monospace",
-              fontWeight: s.serif ? 400 : 400,
-              color: s.gold ? '#F5C842' : '#B8CCE0',
+              color: s.gold ? '#F5C842' : '#C4D4E8',
               lineHeight: 1.2,
               letterSpacing: s.serif ? '0.5px' : '-0.3px',
             }}>
@@ -83,21 +65,20 @@ export default function StatStrip({ now, progress, launched, telemetry, phaseIdx
         ))}
       </div>
 
-      {/* Data source badge */}
       {launched && (
         <div style={{
           textAlign: 'right',
           marginTop: 6,
-          fontSize: 8.5,
+          fontSize: 12,
           letterSpacing: '1px',
-          color: '#0F1E30',
+          color: '#3A5A78',
           display: 'flex',
           justifyContent: 'flex-end',
           gap: 12,
         }}>
           {source === 'live' ? (
             <>
-              <span style={{ color: '#1D5C38' }}>● LIVE NASA TELEMETRY</span>
+              <span style={{ color: '#2A8A54' }}>● LIVE NASA TELEMETRY</span>
               {telemetry?.dataAgeSecs != null && (
                 <span>DATA {telemetry.dataAgeSecs}s AGO</span>
               )}
