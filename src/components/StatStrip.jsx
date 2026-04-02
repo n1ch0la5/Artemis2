@@ -89,12 +89,22 @@ export default function StatStrip({ now, progress, launched, telemetry, phaseIdx
           textAlign: 'right',
           marginTop: 6,
           fontSize: 8.5,
-          color: '#0F1E30',
           letterSpacing: '1px',
+          color: '#0F1E30',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 12,
         }}>
-          {source === 'arow'
-            ? '● LIVE NASA AROW DATA'
-            : '◌ ESTIMATED VALUES — AROW UNAVAILABLE'}
+          {source === 'live' ? (
+            <>
+              <span style={{ color: '#1D5C38' }}>● LIVE NASA TELEMETRY</span>
+              {telemetry?.dataAgeSecs != null && (
+                <span>DATA {telemetry.dataAgeSecs}s AGO</span>
+              )}
+            </>
+          ) : (
+            <span>◌ ESTIMATED — TELEMETRY UNAVAILABLE</span>
+          )}
         </div>
       )}
     </div>

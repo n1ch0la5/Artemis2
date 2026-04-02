@@ -72,11 +72,16 @@ export default function App() {
   const dist     = telemetry?.distanceFromEarth ?? estimateDistanceFromEarth(progress)
   const toMoon   = telemetry?.distanceToMoon    ?? estimateDistanceToMoon(dist)
   const velocity = telemetry?.velocity          ?? estimateVelocity(progress)
+  
+  const dataAgeSecs = telemetry?.unixTimestamp
+    ? Math.round((now / 1000) - telemetry.unixTimestamp)
+    : null
   const mergedTelemetry = {
     distanceFromEarth: dist,
     distanceToMoon:    toMoon,
     velocity,
-    source: telemetry?.source ?? 'calculated',
+    source:     telemetry?.source ?? 'calculated',
+    dataAgeSecs,
   }
 
   return (
@@ -123,6 +128,17 @@ export default function App() {
           <em style={{ fontStyle: 'italic', fontWeight: 400 }}>Orion</em>{' '}
           right now?
         </h1>
+        <h2 style={{
+          fontFamily:    "'Cormorant Garamond', serif",
+          fontWeight:    300,
+          fontSize:      'clamp(18px, 5.5vw, 36px)',
+          textAlign:     'center',
+          color:         '#808080',
+          letterSpacing: '-0.5px',
+          marginBottom:  28,
+          lineHeight:    1,
+        }}>
+          Artemis II Mission Real-Time Tracker</h2>
 
         {/* ── Trajectory ── */}
         <div style={{ marginBottom: 28 }}>

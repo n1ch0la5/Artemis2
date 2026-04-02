@@ -1,16 +1,30 @@
 /**
  * Netlify Function: /api/arow
  *
- * Proxies NASA AROW (Artemis Real-time Orbit Website) data to avoid CORS
- * and to normalize the response for the frontend.
+ * Fetches live Orion telemetry from NASA's public GCS bucket and returns
+ * normalized data for the frontend.
  *
- * Falls back to { source: 'unavailable' } if NASA's endpoint is unreachable,
- * so the frontend can gracefully use calculated estimates.
+ * Confirmed parameters (reverse-engineered from AROW Unity app, April 2026):
  *
- * Cache-Control: 55s — slightly under our 60s poll interval.
+ *   2003, 2004, 2005  →  ECI position X,Y,Z        (meters)
+ *   2009, 2010, 2011  →  ECI velocity Vx,Vy,Vz     (m/s)
+ *   5001              →  Mission elapsed time       (seconds) — not always present
+ *   5010              →  Unix timestamp, data clock (seconds since epoch)
+ *   5007, 5008, 5009  →  Thermal sensors            (°F, probably)
+ *
+ * Parameters 2012–2015 appear to be an attitude quaternion (unit norm ~1).
+ * Parameters 2101–2103 are very small values, possibly angular acceleration.
+ * Parameters 5002–5006 may be orbital element rates.
+ *
+ * The GCS object is overwritten in-place; no generation param needed for latest.
  */
 
-const NASA_AROW_URL = process.env.NASA_AROW_URL
+const GCS_URL = 'https://storage.googleapis.com/p-2-cen1/October/1/October_105_1.txt'
+
+const EARTH_RADIUS_KM = 6_371
+const KM_TO_MILES     = 0.621371
+const MS_TO_MPH       = 2.23694
+const EARTH_MOON_KM   = 384_400
 
 export default async (req, context) => {
   const headers = {
@@ -19,38 +33,68 @@ export default async (req, context) => {
     'Access-Control-Allow-Origin': '*',
   }
 
-  // If no AROW URL is configured, return unavailable immediately
-  if (!NASA_AROW_URL) {
-    return new Response(
-      JSON.stringify({ source: 'unavailable', reason: 'NASA_AROW_URL not set' }),
-      { status: 200, headers }
-    )
-  }
-
   try {
-    const res = await fetch(NASA_AROW_URL, {
-      signal: AbortSignal.timeout(8000), // 8s timeout
+    const res = await fetch(GCS_URL, {
+      signal: AbortSignal.timeout(8_000),
     })
-
-    if (!res.ok) throw new Error(`AROW HTTP ${res.status}`)
+    if (!res.ok) throw new Error(`GCS ${res.status}`)
 
     const raw = await res.json()
 
-    // ── Normalize to our schema ──────────────────────────────────────────────
-    // Adjust field names below once the actual AROW response shape is known.
-    // Common fields NASA trackers expose: earthDistance, moonDistance, velocity
-    const normalized = {
-      source:            'arow',
-      distanceFromEarth: toMiles(raw.earthDistance ?? raw.distanceFromEarth),
-      distanceToMoon:    toMiles(raw.moonDistance  ?? raw.distanceToMoon),
-      velocity:          toMph(raw.velocity ?? raw.speed),
-      timestamp:         raw.timestamp ?? new Date().toISOString(),
-    }
+    // ── Position (meters, ECI) ────────────────────────────────────────────────
+    const x = num(raw, '2003')
+    const y = num(raw, '2004')
+    const z = num(raw, '2005')
+    if (isNaN(x)) throw new Error('Position params missing')
 
-    return new Response(JSON.stringify(normalized), { status: 200, headers })
+    const distCenterKm  = Math.sqrt(x*x + y*y + z*z) / 1_000
+    const distSurfaceKm = Math.max(0, distCenterKm - EARTH_RADIUS_KM)
+    const distFromEarth = Math.round(distSurfaceKm * KM_TO_MILES)
+
+    // ── Velocity (m/s, ECI) ───────────────────────────────────────────────────
+    const vx = num(raw, '2009')
+    const vy = num(raw, '2010')
+    const vz = num(raw, '2011')
+    if (isNaN(vx)) throw new Error('Velocity params missing')
+
+    const velocity = Math.round(Math.sqrt(vx*vx + vy*vy + vz*vz) * MS_TO_MPH)
+
+    // ── Distance to Moon (approximation) ─────────────────────────────────────
+    // Without Moon's live ECI coords we use average Earth-Moon distance.
+    // Clamped to 4,112 mi (closest planned approach above lunar surface).
+    const distToMoon = Math.max(4_112,
+      Math.round(Math.abs(EARTH_MOON_KM - distSurfaceKm) * KM_TO_MILES)
+    )
+
+    // ── Timestamps ───────────────────────────────────────────────────────────
+    // 5001 = MET in seconds (not always present)
+    // 5010 = Unix timestamp of data (seconds since epoch, always present)
+    const metSeconds   = num(raw, '5001')  // may be NaN
+    const unixTs       = num(raw, '5010')  // reliable clock
+    const dataTime     = raw.Parameter_2003?.Time  // "2026:092:15:58:16.125"
+
+    // ── Attitude quaternion (2012, 2013, 2014, 2015) ─────────────────────────
+    // Included raw — useful for future 3D orientation visualisation
+    const qx = num(raw, '2012')
+    const qy = num(raw, '2013')
+    const qz = num(raw, '2014')
+    const qw = num(raw, '2015')
+
+    return new Response(JSON.stringify({
+      source:            'live',
+      distanceFromEarth: distFromEarth,            // miles from surface
+      distanceToMoon:    distToMoon,                // miles (estimated)
+      velocity,                                     // mph
+      metSeconds:        isNaN(metSeconds) ? null : Math.round(metSeconds),
+      unixTimestamp:     isNaN(unixTs)    ? null : unixTs,
+      dataTimestamp:     dataTime,                  // "year:doy:HH:MM:SS.sss"
+      attitude:          [qx, qy, qz, qw],          // unit quaternion
+      _pos_km:           [x/1_000, y/1_000, z/1_000],
+      _vel_ms:           [vx, vy, vz],
+    }), { status: 200, headers })
 
   } catch (err) {
-    console.error('[arow proxy]', err.message)
+    console.error('[arow]', err.message)
     return new Response(
       JSON.stringify({ source: 'unavailable', reason: err.message }),
       { status: 200, headers }
@@ -58,18 +102,8 @@ export default async (req, context) => {
   }
 }
 
-// ─── Unit helpers ─────────────────────────────────────────────────────────────
-// NASA data is often in km; convert to miles for consistency with the frontend.
-function toMiles(km) {
-  if (km == null) return null
-  return Math.round(km * 0.621371)
+function num(data, id) {
+  return parseFloat(data[`Parameter_${id}`]?.Value)
 }
 
-function toMph(kph) {
-  if (kph == null) return null
-  return Math.round(kph * 0.621371)
-}
-
-export const config = {
-  path: '/api/arow',
-}
+export const config = { path: '/api/arow' }
