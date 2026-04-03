@@ -19,19 +19,16 @@ export default function ReactionDock({ viewers }) {
   const [counts,   setCounts]   = useState({})
   const [floaters, setFloaters] = useState([])
   const [ticker,   setTicker]   = useState(0)   // reactions in last 60s
-  const [musicOn,  setMusicOn]  = useState(false)
+  const [musicOn,   setMusicOn]   = useState(false)
+  const [iframeSrc, setIframeSrc] = useState('')
   const recentTs = useRef([])                    // timestamps of recent reactions
-  const iframeRef = useRef(null)
-
   const handleMusicToggle = useCallback(() => {
     if (musicOn) {
-      if (iframeRef.current) iframeRef.current.src = ''
+      setIframeSrc('')
       setMusicOn(false)
     } else {
       const offset = Math.floor(((Date.now() - PURPLE_CAT_EPOCH_MS) / 1000) % PURPLE_CAT_TRACK_SECS)
-      if (iframeRef.current) {
-        iframeRef.current.src = `https://www.youtube.com/embed/${PURPLE_CAT_VIDEO_ID}?autoplay=1&start=${offset}&loop=1&playlist=${PURPLE_CAT_VIDEO_ID}&controls=0&rel=0&modestbranding=1`
-      }
+      setIframeSrc(`https://www.youtube.com/embed/${PURPLE_CAT_VIDEO_ID}?autoplay=1&start=${offset}&loop=1&playlist=${PURPLE_CAT_VIDEO_ID}&controls=0&rel=0&modestbranding=1`)
       setMusicOn(true)
     }
   }, [musicOn])
@@ -262,7 +259,7 @@ export default function ReactionDock({ viewers }) {
 
       {/* Hidden YouTube iframe — audio only */}
       <iframe
-        ref={iframeRef}
+        src={iframeSrc}
         title="Purrple Cat music"
         allow="autoplay"
         style={{
