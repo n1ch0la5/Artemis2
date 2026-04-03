@@ -125,7 +125,8 @@ export function estimateVelocity(t) {
   // mph — rough curve through known mission phases
   const knots = [
     [0.00, 17400], [0.04, 17400], [0.08, 24800],
-    [0.14, 19500], [0.62,  1450], [0.68,  1200],
+    [0.12,  8000], [0.20,  3900], [0.50,  2200],
+    [0.62,  1450], [0.68,  1200],
     [0.90, 14000], [1.00, 25000],
   ]
   for (let i = 1; i < knots.length; i++) {

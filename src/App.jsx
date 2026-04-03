@@ -35,7 +35,9 @@ function fmtUTC(ms) {
 
 export default function App() {
   const [now,       setNow]      = useState(Date.now())
-  const [telemetry, setTelemetry] = useState(null)   // AROW data if available
+  const [telemetry, setTelemetry] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('arow_cache')) } catch { return null }
+  })
   const [viewers,   setViewers]  = useState(1)
   const [metric,    setMetric]   = useState(() => localStorage.getItem('metric') === 'true')
   const viewerId = useRef(Math.random().toString(36).slice(2))
@@ -55,7 +57,10 @@ export default function App() {
   // AROW polling (every 60s)
   const pollAROW = useCallback(async () => {
     const data = await fetchAROW()
-    if (data) setTelemetry(data)
+    if (data && data.source !== 'unavailable') {
+      setTelemetry(data)
+      try { localStorage.setItem('arow_cache', JSON.stringify(data)) } catch {}
+    }
   }, [])
 
   useEffect(() => {
@@ -77,12 +82,14 @@ export default function App() {
   const dataAgeSecs = telemetry?.unixTimestamp
     ? Math.round((now / 1000) - telemetry.unixTimestamp)
     : null
+  // If cached data is older than 10 minutes, fall back to estimates
+  const stale = dataAgeSecs != null && dataAgeSecs > 600
   const mergedTelemetry = {
-    distanceFromEarth: dist,
-    distanceToMoon:    toMoon,
-    velocity,
-    source:     telemetry?.source ?? 'calculated',
-    dataAgeSecs,
+    distanceFromEarth: stale ? estimateDistanceFromEarth(progress) : dist,
+    distanceToMoon:    stale ? estimateDistanceToMoon(estimateDistanceFromEarth(progress)) : toMoon,
+    velocity:          stale ? estimateVelocity(progress) : velocity,
+    source:     stale ? 'calculated' : (telemetry?.source ?? 'calculated'),
+    dataAgeSecs: stale ? null : dataAgeSecs,
   }
 
   return (
