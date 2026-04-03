@@ -82,14 +82,12 @@ export default function App() {
   const dataAgeSecs = telemetry?.unixTimestamp
     ? Math.round((now / 1000) - telemetry.unixTimestamp)
     : null
-  // If cached data is older than 10 minutes, fall back to estimates
-  const stale = dataAgeSecs != null && dataAgeSecs > 600
   const mergedTelemetry = {
-    distanceFromEarth: stale ? estimateDistanceFromEarth(progress) : dist,
-    distanceToMoon:    stale ? estimateDistanceToMoon(estimateDistanceFromEarth(progress)) : toMoon,
-    velocity:          stale ? estimateVelocity(progress) : velocity,
-    source:     stale ? 'calculated' : (telemetry?.source ?? 'calculated'),
-    dataAgeSecs: stale ? null : dataAgeSecs,
+    distanceFromEarth: dist,
+    distanceToMoon:    toMoon,
+    velocity,
+    source:     telemetry?.source ?? 'calculated',
+    dataAgeSecs,
   }
 
   return (
