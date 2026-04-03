@@ -82,7 +82,7 @@ export default function MissionCanvas({ progress, launched, landed }) {
         <path
           d={futurePath || FULL_PATH}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke="rgba(255,255,255,0.18)"
           strokeWidth="1.2"
           strokeDasharray="5,7"
           style={{ animation: 'pathDash 8s linear infinite' }}
