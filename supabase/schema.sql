@@ -34,6 +34,9 @@ create policy "anyone can read reactions"
 create policy "anyone can increment reactions"
   on reactions for insert with check (true);
 
+create policy "anyone can update reactions"
+  on reactions for update using (true) with check (true);
+
 -- RLS doesn't cover RPCs by default — grant execute to anon
 grant execute on function increment_reaction(text) to anon;
 

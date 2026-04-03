@@ -6,8 +6,8 @@
  *
  * Confirmed parameters (reverse-engineered from AROW Unity app, April 2026):
  *
- *   2003, 2004, 2005  →  ECI position X,Y,Z        (meters)
- *   2009, 2010, 2011  →  ECI velocity Vx,Vy,Vz     (m/s)
+ *   2003, 2004, 2005  →  ECI position X,Y,Z        (feet)
+ *   2009, 2010, 2011  →  ECI velocity Vx,Vy,Vz     (ft/s)
  *   5001              →  Mission elapsed time       (seconds) — not always present
  *   5010              →  Unix timestamp, data clock (seconds since epoch)
  *   5007, 5008, 5009  →  Thermal sensors            (°F, probably)
@@ -23,8 +23,9 @@ const GCS_URL = 'https://storage.googleapis.com/p-2-cen1/October/1/October_105_1
 
 const EARTH_RADIUS_KM = 6_371
 const KM_TO_MILES     = 0.621371
-const MS_TO_MPH       = 2.23694
-const EARTH_MOON_KM   = 384_400
+const FT_TO_KM        = 0.0003048   // position params are in feet
+const FTS_TO_MPH      = 0.681818    // velocity params are in ft/s
+const EARTH_MOON_KM   = 386_500  // actual distance during Artemis II window (avg is 384,400)
 
 export default async (req, context) => {
   const headers = {
@@ -41,23 +42,23 @@ export default async (req, context) => {
 
     const raw = await res.json()
 
-    // ── Position (meters, ECI) ────────────────────────────────────────────────
+    // ── Position (feet, ECI) ─────────────────────────────────────────────────
     const x = num(raw, '2003')
     const y = num(raw, '2004')
     const z = num(raw, '2005')
     if (isNaN(x)) throw new Error('Position params missing')
 
-    const distCenterKm  = Math.sqrt(x*x + y*y + z*z) / 1_000
+    const distCenterKm  = Math.sqrt(x*x + y*y + z*z) * FT_TO_KM
     const distSurfaceKm = Math.max(0, distCenterKm - EARTH_RADIUS_KM)
     const distFromEarth = Math.round(distSurfaceKm * KM_TO_MILES)
 
-    // ── Velocity (m/s, ECI) ───────────────────────────────────────────────────
+    // ── Velocity (ft/s, ECI) ─────────────────────────────────────────────────
     const vx = num(raw, '2009')
     const vy = num(raw, '2010')
     const vz = num(raw, '2011')
     if (isNaN(vx)) throw new Error('Velocity params missing')
 
-    const velocity = Math.round(Math.sqrt(vx*vx + vy*vy + vz*vz) * MS_TO_MPH)
+    const velocity = Math.round(Math.sqrt(vx*vx + vy*vy + vz*vz) * FTS_TO_MPH)
 
     // ── Distance to Moon (approximation) ─────────────────────────────────────
     // Without Moon's live ECI coords we use average Earth-Moon distance.
@@ -89,8 +90,8 @@ export default async (req, context) => {
       unixTimestamp:     isNaN(unixTs)    ? null : unixTs,
       dataTimestamp:     dataTime,                  // "year:doy:HH:MM:SS.sss"
       attitude:          [qx, qy, qz, qw],          // unit quaternion
-      _pos_km:           [x/1_000, y/1_000, z/1_000],
-      _vel_ms:           [vx, vy, vz],
+      _pos_km:           [x*FT_TO_KM, y*FT_TO_KM, z*FT_TO_KM],
+      _vel_fts:          [vx, vy, vz],
     }), { status: 200, headers })
 
   } catch (err) {
