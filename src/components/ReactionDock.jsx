@@ -20,15 +20,50 @@ export default function ReactionDock({ viewers }) {
   const [floaters, setFloaters] = useState([])
   const [ticker,   setTicker]   = useState(0)   // reactions in last 60s
   const [musicOn,   setMusicOn]   = useState(false)
-  const [iframeSrc, setIframeSrc] = useState('')
+  const playerRef = useRef(null)
   const recentTs = useRef([])                    // timestamps of recent reactions
+
+  // Load YouTube IFrame API once and create a persistent DOM node for the player
+  useEffect(() => {
+    if (!document.getElementById('yt-music-host')) {
+      const host = document.createElement('div')
+      host.id = 'yt-music-host'
+      Object.assign(host.style, { position: 'fixed', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none', bottom: '0', left: '0' })
+      document.body.appendChild(host)
+    }
+    if (!window.YT) {
+      const tag = document.createElement('script')
+      tag.src = 'https://www.youtube.com/iframe_api'
+      document.head.appendChild(tag)
+    }
+  }, [])
+
   const handleMusicToggle = useCallback(() => {
     if (musicOn) {
-      setIframeSrc('')
+      playerRef.current?.destroy()
+      playerRef.current = null
+      // Re-create the host div since destroy removes it
+      const old = document.getElementById('yt-music-host')
+      if (old) old.remove()
+      const host = document.createElement('div')
+      host.id = 'yt-music-host'
+      Object.assign(host.style, { position: 'fixed', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none', bottom: '0', left: '0' })
+      document.body.appendChild(host)
       setMusicOn(false)
     } else {
       const offset = Math.floor(((Date.now() - PURPLE_CAT_EPOCH_MS) / 1000) % PURPLE_CAT_TRACK_SECS)
-      setIframeSrc(`https://www.youtube.com/embed/${PURPLE_CAT_VIDEO_ID}?autoplay=1&start=${offset}&loop=1&playlist=${PURPLE_CAT_VIDEO_ID}&controls=0&rel=0&modestbranding=1`)
+      const create = () => {
+        playerRef.current = new window.YT.Player('yt-music-host', {
+          height: '1', width: '1',
+          videoId: PURPLE_CAT_VIDEO_ID,
+          playerVars: { autoplay: 1, start: offset, loop: 1, playlist: PURPLE_CAT_VIDEO_ID, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+          events: {
+            onReady: (e) => e.target.playVideo(),
+          },
+        })
+      }
+      if (window.YT?.Player) create()
+      else window.onYouTubeIframeAPIReady = create
       setMusicOn(true)
     }
   }, [musicOn])
@@ -257,21 +292,6 @@ export default function ReactionDock({ viewers }) {
         </div>
       </div>
 
-      {/* Hidden YouTube iframe — audio only */}
-      <iframe
-        src={iframeSrc}
-        title="Purrple Cat music"
-        allow="autoplay"
-        style={{
-          position:      'fixed',
-          width:         1,
-          height:        1,
-          opacity:       0,
-          pointerEvents: 'none',
-          bottom:        0,
-          left:          0,
-        }}
-      />
     </>
   )
 }

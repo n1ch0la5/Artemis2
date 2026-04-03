@@ -58,8 +58,12 @@ export default function App() {
   const pollAROW = useCallback(async () => {
     const data = await fetchAROW()
     if (data && data.source !== 'unavailable') {
-      setTelemetry(data)
-      try { localStorage.setItem('arow_cache', JSON.stringify(data)) } catch {}
+      setTelemetry(prev => {
+        // Only update if incoming data is newer (NASA GCS can serve out-of-order)
+        if (prev?.unixTimestamp && data.unixTimestamp < prev.unixTimestamp) return prev
+        try { localStorage.setItem('arow_cache', JSON.stringify(data)) } catch {}
+        return data
+      })
     }
   }, [])
 
