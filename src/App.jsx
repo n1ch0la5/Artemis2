@@ -36,6 +36,7 @@ export default function App() {
   const [now,       setNow]      = useState(Date.now())
   const [telemetry, setTelemetry] = useState(null)   // AROW data if available
   const [viewers,   setViewers]  = useState(1)
+  const [metric,    setMetric]   = useState(() => localStorage.getItem('metric') === 'true')
   const viewerId = useRef(Math.random().toString(36).slice(2))
 
   // Clock tick
@@ -144,6 +145,8 @@ export default function App() {
           launched={launched}
           telemetry={mergedTelemetry}
           phaseIdx={phaseIdx}
+          metric={metric}
+          setMetric={setMetric}
         />
 
         {/* ── Mission timeline ── */}
