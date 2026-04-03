@@ -6,15 +6,6 @@ import {
   getTrajectoryPoint,
 } from '../lib/mission.js'
 
-// Deterministic star field (golden-ratio spread)
-const STARS = Array.from({ length: 200 }, (_, i) => ({
-  cx:    ((i * 137.508)        % 100).toFixed(3),
-  cy:    ((i * 97.331 + 11)   % 100).toFixed(3),
-  r:     i % 11 === 0 ? 1.4 : i % 5 === 0 ? 0.9 : 0.5,
-  o:     (0.12 + (i % 7) * 0.09).toFixed(2),
-  dur:   (2.4  + (i % 6) * 0.55).toFixed(1),
-  delay: ((i * 0.37) % 5).toFixed(1),
-}))
 
 export default function MissionCanvas({ progress, launched, landed }) {
   // Split the path into: completed (gold) + future (ghost).
@@ -87,22 +78,7 @@ export default function MissionCanvas({ progress, launched, landed }) {
           </linearGradient>
         </defs>
 
-        {/* ── Stars ── */}
-        {STARS.map((s, i) => (
-          <circle
-            key={i}
-            cx={`${s.cx}%`} cy={`${s.cy}%`}
-            r={s.r} fill="white"
-            style={{
-              '--star-opacity': s.o,
-              opacity: s.o,
-              animation: `twinkle ${s.dur}s ease-in-out infinite`,
-              animationDelay: `${s.delay}s`,
-            }}
-          />
-        ))}
-
-        {/* ── Future path (ghost, ahead of Orion) ── */}
+{/* ── Future path (ghost, ahead of Orion) ── */}
         <path
           d={futurePath || FULL_PATH}
           fill="none"

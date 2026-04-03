@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Starfield     from './components/Starfield.jsx'
 import MissionCanvas from './components/MissionCanvas.jsx'
 import StatStrip     from './components/StatStrip.jsx'
 import Timeline      from './components/Timeline.jsx'
@@ -92,7 +93,8 @@ export default function App() {
       fontFamily:  "'JetBrains Mono', 'Courier New', monospace",
       overflowX:   'hidden',
     }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px 20px 52px' }}>
+      <Starfield />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 960, margin: '0 auto', padding: '28px 20px 52px' }}>
 
         {/* ── Eyebrow ── */}
         <div style={{

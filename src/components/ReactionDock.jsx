@@ -9,11 +9,33 @@ import {
 
 const EMOJIS = ['👀', '🚀', '🌕', '❤️', '🙌', '✨']
 
+// Purple Cat music sync — wall-clock offset keeps everyone at the same position.
+// Replace PURPLE_CAT_VIDEO_ID with the real YouTube video ID before deploying.
+const PURPLE_CAT_VIDEO_ID   = 'ZF7-JqMM21A'
+const PURPLE_CAT_TRACK_SECS = 1642           // 27:22
+const PURPLE_CAT_EPOCH_MS   = 1735689600000  // 2025-01-01T00:00:00Z — shared virtual start
+const PURPLE_CAT_LINK       = 'https://www.youtube.com/channel/UCrOw0E3-URvN_y54hX9Jg6Q'
+
 export default function ReactionDock({ viewers }) {
   const [counts,   setCounts]   = useState({})
   const [floaters, setFloaters] = useState([])
   const [ticker,   setTicker]   = useState(0)   // reactions in last 60s
+  const [musicOn,  setMusicOn]  = useState(false)
   const recentTs = useRef([])                    // timestamps of recent reactions
+  const iframeRef = useRef(null)
+
+  const handleMusicToggle = useCallback(() => {
+    if (musicOn) {
+      if (iframeRef.current) iframeRef.current.src = ''
+      setMusicOn(false)
+    } else {
+      const offset = Math.floor(((Date.now() - PURPLE_CAT_EPOCH_MS) / 1000) % PURPLE_CAT_TRACK_SECS)
+      if (iframeRef.current) {
+        iframeRef.current.src = `https://www.youtube.com/embed/${PURPLE_CAT_VIDEO_ID}?autoplay=1&start=${offset}&loop=1&playlist=${PURPLE_CAT_VIDEO_ID}&controls=0&rel=0&modestbranding=1`
+      }
+      setMusicOn(true)
+    }
+  }, [musicOn])
 
   // Load persisted counts on mount
   useEffect(() => {
@@ -174,7 +196,86 @@ export default function ReactionDock({ viewers }) {
             {formatNum(total)} total reactions worldwide
           </div>
         )}
+
+        {/* Music toggle */}
+        <div style={{
+          marginTop:  16,
+          paddingTop: 14,
+          borderTop:  '1px solid rgba(255,255,255,0.04)',
+          display:    'flex',
+          alignItems: 'center',
+          gap:        10,
+        }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>♫</span>
+          <div style={{ flex: 1 }}>
+            <a
+              href={PURPLE_CAT_LINK}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontSize:       13,
+                color:          musicOn ? '#2AAA64' : '#4A6A88',
+                textDecoration: 'none',
+                letterSpacing:  '0.5px',
+                transition:     'color .2s ease',
+              }}
+            >
+              Purple Cat
+            </a>
+            <span style={{ fontSize: 11, color: '#1A2E44', marginLeft: 6 }}>
+              · lo-fi beats
+            </span>
+          </div>
+          {musicOn && (
+            <span style={{
+              display:      'inline-block',
+              width:        7,
+              height:       7,
+              borderRadius: '50%',
+              background:   '#2AAA64',
+              marginRight:  4,
+              flexShrink:   0,
+            }} />
+          )}
+          <button
+            onClick={handleMusicToggle}
+            style={{
+              background:   musicOn ? 'rgba(42,170,100,0.1)' : 'rgba(255,255,255,0.03)',
+              border:       `1px solid ${musicOn ? 'rgba(42,170,100,0.25)' : 'rgba(255,255,255,0.05)'}`,
+              borderRadius: 8,
+              padding:      '6px 12px',
+              cursor:       'pointer',
+              color:        musicOn ? '#2AAA64' : '#4A6A88',
+              fontSize:     12,
+              letterSpacing:'0.5px',
+              transition:   'transform .1s ease, background .2s ease, color .2s ease',
+              whiteSpace:   'nowrap',
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown ={e => e.currentTarget.style.transform = 'scale(.92)'}
+            onMouseUp   ={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            {musicOn ? '■ Stop' : '▶ Listen'}
+          </button>
+        </div>
       </div>
+
+      {/* Hidden YouTube iframe — audio only */}
+      <iframe
+        ref={iframeRef}
+        title="Purple Cat music"
+        allow="autoplay"
+        style={{
+          position:      'fixed',
+          width:         1,
+          height:        1,
+          opacity:       0,
+          pointerEvents: 'none',
+          bottom:        0,
+          left:          0,
+        }}
+      />
     </>
   )
 }
