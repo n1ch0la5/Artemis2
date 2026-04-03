@@ -9,12 +9,11 @@ import {
 
 const EMOJIS = ['👀', '🚀', '🌕', '❤️', '🙌', '✨']
 
-// Purple Cat music sync — wall-clock offset keeps everyone at the same position.
-// Replace PURPLE_CAT_VIDEO_ID with the real YouTube video ID before deploying.
+// Purrple Cat music sync — wall-clock offset keeps everyone at the same position.
 const PURPLE_CAT_VIDEO_ID   = 'ZF7-JqMM21A'
 const PURPLE_CAT_TRACK_SECS = 1642           // 27:22
 const PURPLE_CAT_EPOCH_MS   = 1735689600000  // 2025-01-01T00:00:00Z — shared virtual start
-const PURPLE_CAT_LINK       = 'https://www.youtube.com/channel/UCrOw0E3-URvN_y54hX9Jg6Q'
+const PURPLE_CAT_LINK       = 'https://www.youtube.com/@PurrpleCat'
 
 export default function ReactionDock({ viewers }) {
   const [counts,   setCounts]   = useState({})
@@ -220,7 +219,7 @@ export default function ReactionDock({ viewers }) {
                 transition:     'color .2s ease',
               }}
             >
-              Purple Cat
+              Purrple Cat
             </a>
             <span style={{ fontSize: 11, color: '#1A2E44', marginLeft: 6 }}>
               · lo-fi beats
@@ -264,7 +263,7 @@ export default function ReactionDock({ viewers }) {
       {/* Hidden YouTube iframe — audio only */}
       <iframe
         ref={iframeRef}
-        title="Purple Cat music"
+        title="Purrple Cat music"
         allow="autoplay"
         style={{
           position:      'fixed',
