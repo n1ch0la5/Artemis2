@@ -68,7 +68,7 @@ Set your env vars in **Netlify → Site settings → Environment variables**:
 
 ### 6 — Custom domain
 
-Buy a domain (`artemis2.live`, `whereorion.com`, etc.) and point it at Netlify.
+Buy a domain (`artemis2mission.live`, `whereorion.com`, etc.) and point it at Netlify.
 Netlify provisions HTTPS automatically.
 
 ---
