@@ -101,6 +101,35 @@ export function getMissionProgress(now = Date.now()) {
   return Math.max(0, Math.min(1, (now - LAUNCH_MS) / MISSION_MS))
 }
 
+/**
+ * Convert distance-from-Earth (miles) + time progress into a trajectory t value.
+ * Uses distance to place the ship on the outbound or return leg.
+ */
+const MAX_DIST = 244_000  // approximate max distance at lunar flyby (miles)
+export function distanceToTrajectoryT(distMiles, timeProgress) {
+  const frac = Math.min(1, Math.max(0, distMiles / MAX_DIST))
+
+  // Determine if outbound or return based on time progress
+  // Flyby is around t=0.62–0.68 (u=0.56–0.68)
+  const pastFlyby = timeProgress > 0.69
+
+  if (!pastFlyby) {
+    // Outbound: map distance 0→MAX_DIST to t 0.04→0.578, then 0.578→0.692 for moon loop
+    if (frac < 0.95) {
+      return 0.04 + (frac / 0.95) * (0.578 - 0.04)
+    }
+    // Near moon — moon loop segment
+    return 0.578 + ((frac - 0.95) / 0.05) * (0.692 - 0.578)
+  } else {
+    // Return: map distance MAX_DIST→0 to t 0.692→1.0
+    if (frac > 0.95) {
+      // Still near moon on return side
+      return 0.692 + ((1 - frac) / 0.05) * (0.75 - 0.692)
+    }
+    return 0.75 + ((0.95 - frac) / 0.95) * (1.0 - 0.75)
+  }
+}
+
 export function getCurrentPhaseIndex(now = Date.now()) {
   return MILESTONES.reduce((acc, m, i) => (m.ms <= now ? i : acc), -1)
 }

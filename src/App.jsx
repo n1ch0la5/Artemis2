@@ -12,6 +12,7 @@ import {
   estimateDistanceFromEarth,
   estimateDistanceToMoon,
   estimateVelocity,
+  distanceToTrajectoryT,
 } from './lib/mission.js'
 import { joinPresence } from './lib/supabase.js'
 
@@ -86,6 +87,10 @@ export default function App() {
   const dataAgeSecs = telemetry?.unixTimestamp
     ? Math.round((now / 1000) - telemetry.unixTimestamp)
     : null
+  // Use real distance to position the ship on the trajectory when live data is available
+  const shipProgress = telemetry?.source === 'live'
+    ? distanceToTrajectoryT(dist, progress)
+    : progress
   const mergedTelemetry = {
     distanceFromEarth: dist,
     distanceToMoon:    toMoon,
@@ -143,7 +148,7 @@ export default function App() {
         {/* ── Trajectory ── */}
         <div style={{ marginBottom: 28 }}>
           <MissionCanvas
-            progress={progress}
+            progress={shipProgress}
             launched={launched}
             landed={landed}
           />
