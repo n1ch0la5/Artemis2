@@ -17,7 +17,7 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
   const velUnit  = metric ? 'kph' : 'mph'
 
   const stats = [
-    { label: 'ELAPSED',    value: launched ? formatElapsed(elapsed) : 'T-0', wide: true },
+    { label: 'ELAPSED',    value: launched ? formatElapsed(elapsed) : 'T-0', wide: true, nowrap: true },
     { label: 'FROM EARTH', value: launched ? `${formatNum(dist)} ${distUnit}` : '—' },
     { label: 'TO MOON',    value: launched ? `${formatNum(toMoon)} ${distUnit}` : '—' },
     { label: 'VELOCITY',   value: launched ? `${formatNum(velocity)} ${velUnit}` : '—' },
@@ -86,6 +86,7 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
               color: s.gold ? '#F5C842' : '#C4D4E8',
               lineHeight: 1.2,
               letterSpacing: s.serif ? '0.5px' : '-0.3px',
+              whiteSpace: s.nowrap ? 'nowrap' : undefined,
             }}>
               {s.value}
             </div>

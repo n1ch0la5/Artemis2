@@ -116,10 +116,10 @@ export default function MissionCanvas({ progress, launched, landed }) {
 
         {/* ── Body labels ── */}
         <text x={EARTH.x} y="240" textAnchor="middle"
-          fill="#1A2E48" fontSize="10" letterSpacing="2.5"
+          fill="#4A6A88" fontSize="12" letterSpacing="2.5"
           fontFamily="'JetBrains Mono', monospace">EARTH</text>
         <text x={MOON.x} y="240" textAnchor="middle"
-          fill="#1A2E48" fontSize="10" letterSpacing="2.5"
+          fill="#4A6A88" fontSize="12" letterSpacing="2.5"
           fontFamily="'JetBrains Mono', monospace">MOON</text>
 
         {/* ── Direction labels ── */}
@@ -141,9 +141,11 @@ export default function MissionCanvas({ progress, launched, landed }) {
               stroke="rgba(245,200,66,0.3)" strokeWidth="1"
               style={{ animation: 'orbitPulse 2.4s ease-in-out infinite' }} />
             {/* Main dot */}
-            <circle cx="0" cy="0" r="4.5" fill="#F5C842" />
+            <circle cx="0" cy="0" r="4.5" fill="#F5C842"
+              style={{ animation: 'orionPulse 2s ease-in-out infinite' }} />
             {/* Hot centre */}
-            <circle cx="0" cy="0" r="2" fill="#FFFCE0" />
+            <circle cx="0" cy="0" r="2" fill="#FFFCE0"
+              style={{ animation: 'orionCorePulse 2s ease-in-out infinite' }} />
           </g>
         )}
 

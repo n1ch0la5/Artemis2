@@ -28,6 +28,16 @@ body {
   50%       { opacity: 0.6; }
 }
 
+@keyframes orionPulse {
+  0%, 100% { opacity: 1; r: 4.5; }
+  50%      { opacity: 0.55; r: 6; }
+}
+
+@keyframes orionCorePulse {
+  0%, 100% { opacity: 1; r: 2; }
+  50%      { opacity: 0.7; r: 3; }
+}
+
 @keyframes reactionRise {
   0%   { transform: translateY(0)   scale(1);   opacity: 1; }
   100% { transform: translateY(-200px) scale(1.5); opacity: 0; }

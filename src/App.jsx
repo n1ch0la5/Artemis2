@@ -41,11 +41,30 @@ export default function App() {
   })
   const [viewers,   setViewers]  = useState(1)
   const [metric,    setMetric]   = useState(() => localStorage.getItem('metric') === 'true')
+  const [updateReady, setUpdateReady] = useState(false)
   const viewerId = useRef(Math.random().toString(36).slice(2))
 
   // Clock tick
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Check for new deploys (every 5 min)
+  useEffect(() => {
+    let initialHash = null
+    const check = async () => {
+      try {
+        const res = await fetch('/', { cache: 'no-cache' })
+        const html = await res.text()
+        const hash = html.match(/assets\/index[.-]([a-f0-9]+)\.js/)?.[1]
+        if (!hash) return
+        if (!initialHash) { initialHash = hash; return }
+        if (hash !== initialHash) setUpdateReady(true)
+      } catch {}
+    }
+    const id = setInterval(check, 300_000)
+    check()
     return () => clearInterval(id)
   }, [])
 
@@ -108,6 +127,23 @@ export default function App() {
       overflowX:   'hidden',
     }}>
       <Starfield />
+
+      {updateReady && (
+        <div
+          onClick={() => window.location.reload()}
+          style={{
+            position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 500, cursor: 'pointer',
+            background: 'rgba(10,20,40,0.9)', border: '1px solid rgba(90,154,224,0.3)',
+            borderRadius: 10, padding: '10px 20px',
+            fontSize: 12, color: '#5A9AE0', letterSpacing: '1px',
+            fontFamily: "'JetBrains Mono', monospace",
+            animation: 'fadeSlideUp .4s ease',
+          }}
+        >
+          Update available — tap to refresh
+        </div>
+      )}
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960, margin: '0 auto', padding: '28px 20px 52px' }}>
 
         {/* ── Eyebrow ── */}
