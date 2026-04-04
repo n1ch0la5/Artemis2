@@ -53,45 +53,49 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
         </div>
         <span style={{ fontSize: 11, color: metric ? '#C4D4E8' : '#4A6A88', letterSpacing: '1px', fontFamily: "'JetBrains Mono', monospace" }}>KM</span>
       </div>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-        gap: '1px',
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 12,
-        overflow: 'hidden',
-      }}>
-        {stats.map((s, i) => (
-          <div key={i} style={{
-            background: '#070F1D',
-            padding: '15px 14px',
-            animation: 'fadeSlideUp .5s ease both',
-            animationDelay: `${i * 0.07}s`,
-          }}>
-            <div style={{
-              fontSize: 12,
-              letterSpacing: '2px',
-              color: '#4A6A88',
-              marginBottom: 6,
-              textTransform: 'uppercase',
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '1px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 12,
+          overflow: 'hidden',
+        }}>
+          {stats.map((s, i) => (
+            <div key={i} style={{
+              background: '#070F1D',
+              padding: '15px 14px',
+              animation: 'fadeSlideUp .5s ease both',
+              animationDelay: `${i * 0.07}s`,
             }}>
-              {s.label}
+              <div style={{
+                fontSize: 12,
+                letterSpacing: '2px',
+                color: '#4A6A88',
+                marginBottom: 6,
+                textTransform: 'uppercase',
+              }}>
+                {s.label}
+              </div>
+              <div style={{
+                fontSize: s.serif ? 20 : 17,
+                fontFamily: s.serif
+                  ? "'Cormorant Garamond', serif"
+                  : "'JetBrains Mono', monospace",
+                color: s.gold ? '#F5C842' : '#C4D4E8',
+                lineHeight: 1.2,
+                letterSpacing: s.serif ? '0.5px' : '-0.3px',
+                whiteSpace: s.nowrap ? 'nowrap' : undefined,
+              }}>
+                {s.value}
+              </div>
             </div>
-            <div style={{
-              fontSize: s.serif ? 20 : 17,
-              fontFamily: s.serif
-                ? "'Cormorant Garamond', serif"
-                : "'JetBrains Mono', monospace",
-              color: s.gold ? '#F5C842' : '#C4D4E8',
-              lineHeight: 1.2,
-              letterSpacing: s.serif ? '0.5px' : '-0.3px',
-              whiteSpace: s.nowrap ? 'nowrap' : undefined,
-            }}>
-              {s.value}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {launched && (

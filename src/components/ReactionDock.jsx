@@ -20,8 +20,10 @@ export default function ReactionDock({ viewers }) {
   const [floaters, setFloaters] = useState([])
   const [ticker,   setTicker]   = useState(0)   // reactions in last 60s
   const [musicOn,   setMusicOn]   = useState(false)
+  const [rockyShoutBurst, setRockyShoutBurst] = useState(0)
   const playerRef = useRef(null)
   const recentTs = useRef([])                    // timestamps of recent reactions
+  const showRockyShout = rockyShoutBurst > 0
 
   // Load YouTube IFrame API once and create a persistent DOM node for the player
   useEffect(() => {
@@ -95,6 +97,13 @@ export default function ReactionDock({ viewers }) {
     }, 3000)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (!rockyShoutBurst) return undefined
+
+    const timeoutId = window.setTimeout(() => setRockyShoutBurst(0), 2500)
+    return () => window.clearTimeout(timeoutId)
+  }, [rockyShoutBurst])
 
   const spawnFloat = useCallback((emoji) => {
     const id = Date.now() + Math.random()
@@ -290,6 +299,151 @@ export default function ReactionDock({ viewers }) {
             {musicOn ? '■ Stop' : '▶ Listen'}
           </button>
         </div>
+      </div>
+
+      <div
+        style={{
+          position: 'fixed',
+          right: 'max(16px, env(safe-area-inset-right))',
+          bottom: 'max(14px, env(safe-area-inset-bottom))',
+          width: 'clamp(38px, 5.2vw, 50px)',
+          aspectRatio: '200 / 201',
+          zIndex: 220,
+          pointerEvents: 'none',
+        }}
+      >
+        {showRockyShout && (
+          <div
+            key={rockyShoutBurst}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: -30,
+              pointerEvents: 'none',
+              zIndex: 3,
+            }}
+          >
+            {[
+              { id: 'first', delay: '0s', x: '-8px', tilt: '-7deg' },
+              { id: 'second', delay: '0.56s', x: '12px', tilt: '5deg' },
+            ].map(shout => (
+              <span
+                key={shout.id}
+                style={{
+                  '--shout-x': shout.x,
+                  '--shout-tilt': shout.tilt,
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  animation: 'rockyShoutRise 1.6s linear both',
+                  animationDelay: shout.delay,
+                  fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive",
+                  fontSize: 'clamp(10px, 1.3vw, 14px)',
+                  lineHeight: 0.95,
+                  color: '#F7FFF3',
+                  textAlign: 'center',
+                  textShadow: '0 0 10px rgba(210,255,224,0.28), 0 2px 0 rgba(22,36,22,0.95), 2px 2px 0 rgba(22,36,22,0.9), -2px 2px 0 rgba(22,36,22,0.9)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                AMAZE!
+              </span>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setRockyShoutBurst(prev => prev + 1)}
+          aria-label="Wake Rocky"
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            cursor: 'pointer',
+            overflow: 'visible',
+            pointerEvents: 'auto',
+            transform: 'translateY(-4%)',
+            transition: 'transform .18s ease',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-7%) scale(1.03)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-4%) scale(1)'}
+          onMouseDown={e => e.currentTarget.style.transform = 'translateY(-1%) scale(0.97)'}
+          onMouseUp={e => e.currentTarget.style.transform = 'translateY(-7%) scale(1.03)'}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: '2% -18% -10%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 50% 42%, rgba(163,255,201,0.82) 0%, rgba(42,170,100,0.74) 20%, rgba(42,170,100,0.54) 46%, rgba(22,52,34,0.28) 66%, rgba(22,52,34,0) 84%)',
+              filter: 'blur(14px)',
+              opacity: 1,
+              animation: 'rockyGlowPulse 5.2s ease-in-out infinite',
+            }}
+          />
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '18%',
+              width: '78%',
+              height: '38%',
+              transform: 'translateX(-50%)',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 50% 46%, rgba(163,255,201,0.5) 0%, rgba(42,170,100,0.28) 50%, rgba(42,170,100,0) 76%)',
+              filter: 'blur(9px)',
+              opacity: 0.45,
+            }}
+          />
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              bottom: '8%',
+              width: '84%',
+              height: '20%',
+              transform: 'translateX(-50%)',
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse at center, rgba(163,255,201,0.16) 0%, rgba(42,170,100,0.18) 34%, rgba(22,52,34,0) 76%)',
+              filter: 'blur(8px)',
+              opacity: 0.5,
+            }}
+          />
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'block',
+              animation: 'rockyIdleDance 13.8s ease-in-out infinite',
+              transformOrigin: '50% 100%',
+            }}
+          >
+            <img
+              src="/rocky.png"
+              alt="Rocky hiding in the corner of the screen"
+              draggable="false"
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 4px 7px rgba(0,0,0,0.44))',
+                userSelect: 'none',
+              }}
+            />
+          </span>
+        </button>
       </div>
 
     </>
