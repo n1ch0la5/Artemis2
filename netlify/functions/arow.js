@@ -22,10 +22,52 @@
 const GCS_URL = 'https://storage.googleapis.com/p-2-cen1/October/1/October_105_1.txt'
 
 const EARTH_RADIUS_KM = 6_371
+const MOON_RADIUS_KM  = 1_737
 const KM_TO_MILES     = 0.621371
 const FT_TO_KM        = 0.0003048   // position params are in feet
 const FTS_TO_MPH      = 0.681818    // velocity params are in ft/s
-const EARTH_MOON_KM   = 386_500  // actual distance during Artemis II window (avg is 384,400)
+
+// ── Simplified lunar ephemeris (good to ~1°, ~2000 km) ───────────────────────
+function getMoonECI(unixTimestamp) {
+  const JD = unixTimestamp / 86400 + 2440587.5
+  const T  = (JD - 2451545.0) / 36525
+  const rad = d => d * Math.PI / 180
+
+  const L0 = 218.3165 + 481267.8813 * T
+  const M  = 134.9634 + 477198.8676 * T
+  const F  = 93.2721  + 483202.0175 * T
+  const D  = 297.8502 + 445267.1115 * T
+  const Ms = 357.5291 + 35999.0503  * T
+
+  const Mr = rad(M), Dr = rad(D), Fr = rad(F), Msr = rad(Ms)
+
+  const lon = L0
+    + 6.289 * Math.sin(Mr)
+    - 1.274 * Math.sin(2*Dr - Mr)
+    + 0.658 * Math.sin(2*Dr)
+    + 0.214 * Math.sin(2*Mr)
+    - 0.186 * Math.sin(Msr)
+    - 0.114 * Math.sin(2*Fr)
+
+  const lat = 5.128 * Math.sin(Fr)
+    + 0.281 * Math.sin(Mr + Fr)
+    - 0.278 * Math.sin(Fr - Mr)
+    - 0.173 * Math.sin(2*Dr - Fr)
+
+  const dist = 385001
+    - 20905 * Math.cos(Mr)
+    - 3699  * Math.cos(2*Dr - Mr)
+    - 2956  * Math.cos(2*Dr)
+
+  const lonR = rad(lon), latR = rad(lat)
+  const eps  = rad(23.4393 - 0.0130 * T)
+
+  const xE = dist * Math.cos(latR) * Math.cos(lonR)
+  const yE = dist * Math.cos(latR) * Math.sin(lonR)
+  const zE = dist * Math.sin(latR)
+
+  return [xE, yE * Math.cos(eps) - zE * Math.sin(eps), yE * Math.sin(eps) + zE * Math.cos(eps)]
+}
 
 export default async (req, context) => {
   const headers = {
@@ -60,12 +102,15 @@ export default async (req, context) => {
 
     const velocity = Math.round(Math.sqrt(vx*vx + vy*vy + vz*vz) * FTS_TO_MPH)
 
-    // ── Distance to Moon (approximation) ─────────────────────────────────────
-    // Without Moon's live ECI coords we use average Earth-Moon distance.
-    // Clamped to 4,112 mi (closest planned approach above lunar surface).
-    const distToMoon = Math.max(4_112,
-      Math.round(Math.abs(EARTH_MOON_KM - distSurfaceKm) * KM_TO_MILES)
-    )
+    // ── Distance to Moon (3D via simplified lunar ephemeris) ───────────────────
+    const scKm = [x * FT_TO_KM, y * FT_TO_KM, z * FT_TO_KM]
+    const moonKm = getMoonECI(unixTs || (Date.now() / 1000))
+    const dxM = scKm[0] - moonKm[0]
+    const dyM = scKm[1] - moonKm[1]
+    const dzM = scKm[2] - moonKm[2]
+    const distToMoonCenter = Math.sqrt(dxM*dxM + dyM*dyM + dzM*dzM)
+    const distToMoonSurface = Math.max(0, distToMoonCenter - MOON_RADIUS_KM)
+    const distToMoon = Math.round(distToMoonSurface * KM_TO_MILES)
 
     // ── Timestamps ───────────────────────────────────────────────────────────
     // 5001 = MET in seconds (not always present)

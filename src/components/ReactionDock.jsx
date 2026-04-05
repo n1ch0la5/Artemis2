@@ -382,7 +382,7 @@ export default function ReactionDock({ viewers }) {
               position: 'absolute',
               inset: '2% -18% -10%',
               borderRadius: '50%',
-              background: 'radial-gradient(circle at 50% 42%, rgba(163,255,201,0.82) 0%, rgba(42,170,100,0.74) 20%, rgba(42,170,100,0.54) 46%, rgba(22,52,34,0.28) 66%, rgba(22,52,34,0) 84%)',
+              background: 'radial-gradient(circle at 50% 42%, rgba(224,231,255,0.82) 0%, rgba(129,140,248,0.74) 20%, rgba(99,102,241,0.54) 46%, rgba(30,27,75,0.28) 66%, rgba(30,27,75,0) 84%)',
               filter: 'blur(14px)',
               opacity: 1,
               animation: 'rockyGlowPulse 5.2s ease-in-out infinite',
@@ -398,7 +398,7 @@ export default function ReactionDock({ viewers }) {
               height: '38%',
               transform: 'translateX(-50%)',
               borderRadius: '50%',
-              background: 'radial-gradient(circle at 50% 46%, rgba(163,255,201,0.5) 0%, rgba(42,170,100,0.28) 50%, rgba(42,170,100,0) 76%)',
+              background: 'radial-gradient(circle at 50% 46%, rgba(224,231,255,0.5) 0%, rgba(129,140,248,0.28) 50%, rgba(129,140,248,0) 76%)',
               filter: 'blur(9px)',
               opacity: 0.45,
             }}
@@ -413,7 +413,7 @@ export default function ReactionDock({ viewers }) {
               height: '20%',
               transform: 'translateX(-50%)',
               borderRadius: '50%',
-              background: 'radial-gradient(ellipse at center, rgba(163,255,201,0.16) 0%, rgba(42,170,100,0.18) 34%, rgba(22,52,34,0) 76%)',
+              background: 'radial-gradient(ellipse at center, rgba(224,231,255,0.16) 0%, rgba(99,102,241,0.18) 34%, rgba(30,27,75,0) 76%)',
               filter: 'blur(8px)',
               opacity: 0.5,
             }}

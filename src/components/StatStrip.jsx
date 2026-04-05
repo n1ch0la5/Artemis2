@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { formatElapsed, formatCountdown, formatNum, MILESTONES } from '../lib/mission.js'
 
 export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, setMetric }) {
+  const [showNote, setShowNote] = useState(false)
   const elapsed  = launched ? now - (new Date('2026-04-01T22:24:00Z').getTime()) : 0
   const phase    = MILESTONES[Math.max(0, phaseIdx)]
   const next     = MILESTONES[Math.min(MILESTONES.length - 1, phaseIdx + 1)]
@@ -19,7 +21,7 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
   const stats = [
     { label: 'ELAPSED',    value: launched ? formatElapsed(elapsed) : 'T-0', wide: true, nowrap: true },
     { label: 'FROM EARTH', value: launched ? `${formatNum(dist)} ${distUnit}` : '—' },
-    { label: 'TO MOON',    value: launched ? `${formatNum(toMoon)} ${distUnit}` : '—' },
+    { label: 'TO MOON',    value: launched ? `${formatNum(toMoon)} ${distUnit}` : '—', note: true },
     { label: 'VELOCITY',   value: launched ? `${formatNum(velocity)} ${velUnit}` : '—' },
     { label: 'PHASE',      value: phase.short, serif: true },
     {
@@ -92,6 +94,15 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
                 whiteSpace: s.nowrap ? 'nowrap' : undefined,
               }}>
                 {s.value}
+                {s.note && (
+                  <span
+                    onClick={() => setShowNote(n => !n)}
+                    style={{
+                      cursor: 'pointer', fontSize: 11, color: '#5A7A94',
+                      marginLeft: 3, verticalAlign: 'super',
+                    }}
+                  >*</span>
+                )}
               </div>
             </div>
           ))}
@@ -119,6 +130,50 @@ export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, 
           ) : (
             <span>◌ ESTIMATED — TELEMETRY UNAVAILABLE</span>
           )}
+        </div>
+      )}
+
+      {showNote && (
+        <div
+          onClick={() => setShowNote(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 600,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0A1628', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12, padding: '22px 26px', maxWidth: 380,
+              fontSize: 13, color: '#8AA4BC', lineHeight: 1.7,
+              letterSpacing: '0.3px',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <div style={{ fontSize: 11, color: '#4A6A88', letterSpacing: '2px', marginBottom: 10, textTransform: 'uppercase' }}>
+              Distance to Moon *
+            </div>
+            <p style={{ margin: '0 0 12px' }}>
+              Calculated using the spacecraft's ECI position from NASA telemetry and the Moon's position from a simplified lunar ephemeris.
+            </p>
+            <p style={{ margin: 0 }}>
+              This may differ slightly from NASA's official figure, which uses high-precision JPL ephemeris data.
+            </p>
+            <button
+              onClick={() => setShowNote(false)}
+              style={{
+                marginTop: 16, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+                padding: '6px 16px', cursor: 'pointer',
+                color: '#5A7A94', fontSize: 12, letterSpacing: '1px',
+              }}
+            >
+              Got it
+            </button>
+          </div>
         </div>
       )}
     </div>

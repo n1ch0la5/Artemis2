@@ -89,7 +89,7 @@ export default function App() {
 
   useEffect(() => {
     pollAROW()
-    const id = setInterval(pollAROW, 60_000)
+    const id = setInterval(pollAROW, 120_000)
     return () => clearInterval(id)
   }, [pollAROW])
 
@@ -188,6 +188,12 @@ export default function App() {
             launched={launched}
             landed={landed}
           />
+          <div style={{
+            textAlign: 'center', fontSize: 10, color: '#2A3A50',
+            marginTop: 6, letterSpacing: '1px',
+          }}>
+            Simplified trajectory — actual path is a free-return flyby, not a lunar orbit
+          </div>
         </div>
 
         {/* ── Live stats ── */}
