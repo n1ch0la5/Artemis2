@@ -102,6 +102,13 @@ export default async (req, context) => {
 
     const velocity = Math.round(Math.sqrt(vx*vx + vy*vy + vz*vz) * FTS_TO_MPH)
 
+    // ── Timestamps ───────────────────────────────────────────────────────────
+    // 5001 = MET in seconds (not always present)
+    // 5010 = Unix timestamp of data (seconds since epoch, always present)
+    const metSeconds   = num(raw, '5001')  // may be NaN
+    const unixTs       = num(raw, '5010')  // reliable clock
+    const dataTime     = raw.Parameter_2003?.Time  // "2026:092:15:58:16.125"
+
     // ── Distance to Moon (3D via simplified lunar ephemeris) ───────────────────
     const scKm = [x * FT_TO_KM, y * FT_TO_KM, z * FT_TO_KM]
     const moonKm = getMoonECI(unixTs || (Date.now() / 1000))
@@ -111,13 +118,6 @@ export default async (req, context) => {
     const distToMoonCenter = Math.sqrt(dxM*dxM + dyM*dyM + dzM*dzM)
     const distToMoonSurface = Math.max(0, distToMoonCenter - MOON_RADIUS_KM)
     const distToMoon = Math.round(distToMoonSurface * KM_TO_MILES)
-
-    // ── Timestamps ───────────────────────────────────────────────────────────
-    // 5001 = MET in seconds (not always present)
-    // 5010 = Unix timestamp of data (seconds since epoch, always present)
-    const metSeconds   = num(raw, '5001')  // may be NaN
-    const unixTs       = num(raw, '5010')  // reliable clock
-    const dataTime     = raw.Parameter_2003?.Time  // "2026:092:15:58:16.125"
 
     // ── Attitude quaternion (2012, 2013, 2014, 2015) ─────────────────────────
     // Included raw — useful for future 3D orientation visualisation
