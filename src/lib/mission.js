@@ -156,26 +156,31 @@ export function estimateDistanceFromEarth(t) {
   return Math.round(244000 * (1 - (u - 0.68) / 0.32))
 }
 
-// ── Simplified lunar ephemeris (Earth-Moon distance in miles) ─────────────────
-// Returns the center-to-center Earth-Moon distance for a given unix timestamp.
-const _rad = d => d * Math.PI / 180
+// ── Moon distance from JPL Horizons (km, centre-to-centre) ───────────────────
+// Pre-computed for the Artemis II window; linearly interpolated.
+const MOON_DIST_TABLE = [
+  // [unixMs, distKm]  — 2026-04-01 22:24 through 2026-04-10 22:24 (12h steps)
+  [1775082240000, 393056], [1775125440000, 394739], [1775168640000, 396377],
+  [1775211840000, 397948], [1775255040000, 399428], [1775298240000, 400789],
+  [1775341440000, 402004], [1775384640000, 403046], [1775427840000, 403888],
+  [1775471040000, 404504], [1775514240000, 404870], [1775557440000, 404967],
+  [1775600640000, 404776], [1775643840000, 404286], [1775687040000, 403489],
+  [1775730240000, 402383], [1775773440000, 400971], [1775816640000, 399263],
+  [1775859840000, 397276],
+]
 function earthMoonDistanceMi(now = Date.now()) {
-  const JD = (now / 1000) / 86400 + 2440587.5
-  const T  = (JD - 2451545.0) / 36525
-  const M  = 134.9634 + 477198.8676 * T   // Moon mean anomaly
-  const D  = 297.8502 + 445267.1115 * T   // Mean elongation
-  const Ms = 357.5291 + 35999.0503  * T   // Sun mean anomaly
-  const Mr = _rad(M), Dr = _rad(D), Msr = _rad(Ms)
-  const distKm = 385001
-    - 20905 * Math.cos(Mr)
-    - 3699  * Math.cos(2*Dr - Mr)
-    - 2956  * Math.cos(2*Dr)
-    - 570   * Math.cos(2*Mr)
-    + 246   * Math.cos(2*Mr - 2*Dr)
-    - 205   * Math.cos(Msr - 2*Dr)
-    - 171   * Math.cos(Mr + 2*Dr)
-    - 152   * Math.cos(Mr + Msr - 2*Dr)
-  return distKm * 0.621371
+  const t = typeof now === 'number' && now < 1e12 ? now : (now || Date.now())
+  const ms = t > 1e12 ? t : t * 1000 // handle both ms and s
+  if (ms <= MOON_DIST_TABLE[0][0]) return MOON_DIST_TABLE[0][1] * 0.621371
+  if (ms >= MOON_DIST_TABLE[MOON_DIST_TABLE.length - 1][0]) return MOON_DIST_TABLE[MOON_DIST_TABLE.length - 1][1] * 0.621371
+  for (let i = 1; i < MOON_DIST_TABLE.length; i++) {
+    if (ms <= MOON_DIST_TABLE[i][0]) {
+      const f = (ms - MOON_DIST_TABLE[i - 1][0]) / (MOON_DIST_TABLE[i][0] - MOON_DIST_TABLE[i - 1][0])
+      const d = MOON_DIST_TABLE[i - 1][1] + f * (MOON_DIST_TABLE[i][1] - MOON_DIST_TABLE[i - 1][1])
+      return d * 0.621371
+    }
+  }
+  return MOON_DIST_TABLE[MOON_DIST_TABLE.length - 1][1] * 0.621371
 }
 
 const EARTH_R_MI = 3959  // Earth radius in miles
