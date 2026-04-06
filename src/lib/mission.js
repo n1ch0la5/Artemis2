@@ -156,8 +156,54 @@ export function estimateDistanceFromEarth(t) {
   return Math.round(244000 * (1 - (u - 0.68) / 0.32))
 }
 
-export function estimateDistanceToMoon(distFromEarth) {
-  return Math.max(4112, Math.round(Math.abs(244000 - distFromEarth)))
+// ── Simplified lunar ephemeris (Earth-Moon distance in miles) ─────────────────
+// Returns the center-to-center Earth-Moon distance for a given unix timestamp.
+const _rad = d => d * Math.PI / 180
+function earthMoonDistanceMi(now = Date.now()) {
+  const JD = (now / 1000) / 86400 + 2440587.5
+  const T  = (JD - 2451545.0) / 36525
+  const M  = 134.9634 + 477198.8676 * T   // Moon mean anomaly
+  const D  = 297.8502 + 445267.1115 * T   // Mean elongation
+  const Ms = 357.5291 + 35999.0503  * T   // Sun mean anomaly
+  const Mr = _rad(M), Dr = _rad(D), Msr = _rad(Ms)
+  const distKm = 385001
+    - 20905 * Math.cos(Mr)
+    - 3699  * Math.cos(2*Dr - Mr)
+    - 2956  * Math.cos(2*Dr)
+    - 570   * Math.cos(2*Mr)
+    + 246   * Math.cos(2*Mr - 2*Dr)
+    - 205   * Math.cos(Msr - 2*Dr)
+    - 171   * Math.cos(Mr + 2*Dr)
+    - 152   * Math.cos(Mr + Msr - 2*Dr)
+  return distKm * 0.621371
+}
+
+const EARTH_R_MI = 3959  // Earth radius in miles
+const MOON_R_MI  = 1080  // Moon radius in miles
+
+export function estimateDistanceToMoon(distFromEarth, t, now) {
+  // Use trajectory geometry + law of cosines for a proper 3D estimate.
+  // The SVG trajectory captures the angular offset of the free-return path.
+  const clampedT = Math.max(0.04, Math.min(1, t || 0))
+  const pt = getTrajectoryPoint(clampedT)
+
+  // Angle between Earth→spacecraft and Earth→Moon directions (from SVG path)
+  const dx   = pt.x - EARTH.x
+  const dy   = pt.y - EARTH.y
+  const mDx  = MOON.x - EARTH.x      // 790
+  const mDy  = MOON.y - EARTH.y      // 0
+  const magSC   = Math.sqrt(dx*dx + dy*dy)
+  const magMoon = Math.sqrt(mDx*mDx + mDy*mDy)
+  const cosTheta = magSC > 0 ? (dx*mDx + dy*mDy) / (magSC * magMoon) : 1
+
+  // Distances from Earth centre (miles)
+  const dSE = distFromEarth + EARTH_R_MI
+  const dEM = earthMoonDistanceMi(now) + EARTH_R_MI  // centre-to-centre
+
+  // Law of cosines:  SM² = SE² + EM² − 2·SE·EM·cos(θ)
+  const sm2 = dSE*dSE + dEM*dEM - 2*dSE*dEM*cosTheta
+  const distToCenter = Math.sqrt(Math.max(0, sm2))
+  return Math.max(0, Math.round(distToCenter - MOON_R_MI))
 }
 
 export function estimateVelocity(t) {

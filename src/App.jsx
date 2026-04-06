@@ -101,7 +101,7 @@ export default function App() {
 
   // Merge AROW data with estimates
   const dist     = telemetry?.distanceFromEarth ?? estimateDistanceFromEarth(progress)
-  const toMoon   = telemetry?.distanceToMoon    ?? estimateDistanceToMoon(dist)
+  const toMoon   = telemetry?.distanceToMoon    ?? estimateDistanceToMoon(dist, progress, now)
   const velocity = telemetry?.velocity          ?? estimateVelocity(progress)
   const dataAgeSecs = telemetry?.unixTimestamp
     ? Math.round((now / 1000) - telemetry.unixTimestamp)

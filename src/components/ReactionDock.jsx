@@ -9,9 +9,11 @@ import {
 
 const EMOJIS = ['👀', '🚀', '🌕', '❤️', '🙌', '✨']
 
-// Purrple Cat music sync — wall-clock offset keeps everyone at the same position.
-const PURPLE_CAT_VIDEO_ID   = 'ZF7-JqMM21A'
-const PURPLE_CAT_TRACK_SECS = 1642           // 27:22
+// Purrple Cat music — playlist of videos that rotate/repeat endlessly.
+const PURPLE_CAT_VIDEOS = [
+  { id: 'ZF7-JqMM21A', secs: 1642 },   // 27:22
+  { id: '-RQe1kGs-V0', secs: 3606 },    // ~60:06
+]
 const PURPLE_CAT_EPOCH_MS   = 1735689600000  // 2025-01-01T00:00:00Z — shared virtual start
 const PURPLE_CAT_LINK       = 'https://www.youtube.com/@PurrpleCat'
 
@@ -22,6 +24,7 @@ export default function ReactionDock({ viewers }) {
   const [musicOn,   setMusicOn]   = useState(false)
   const [rockyShoutBurst, setRockyShoutBurst] = useState(0)
   const playerRef = useRef(null)
+  const videoIdx  = useRef(0)                    // current index in PURPLE_CAT_VIDEOS
   const recentTs = useRef([])                    // timestamps of recent reactions
   const showRockyShout = rockyShoutBurst > 0
 
@@ -53,14 +56,28 @@ export default function ReactionDock({ viewers }) {
       document.body.appendChild(host)
       setMusicOn(false)
     } else {
-      const offset = Math.floor(((Date.now() - PURPLE_CAT_EPOCH_MS) / 1000) % PURPLE_CAT_TRACK_SECS)
+      // Figure out where we are in the combined playlist based on wall-clock time
+      const totalSecs = PURPLE_CAT_VIDEOS.reduce((s, v) => s + v.secs, 0)
+      let elapsed = Math.floor(((Date.now() - PURPLE_CAT_EPOCH_MS) / 1000) % totalSecs)
+      let startIdx = 0
+      for (let i = 0; i < PURPLE_CAT_VIDEOS.length; i++) {
+        if (elapsed < PURPLE_CAT_VIDEOS[i].secs) { startIdx = i; break }
+        elapsed -= PURPLE_CAT_VIDEOS[i].secs
+      }
+      videoIdx.current = startIdx
       const create = () => {
         playerRef.current = new window.YT.Player('yt-music-host', {
           height: '1', width: '1',
-          videoId: PURPLE_CAT_VIDEO_ID,
-          playerVars: { autoplay: 1, start: offset, loop: 1, playlist: PURPLE_CAT_VIDEO_ID, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+          videoId: PURPLE_CAT_VIDEOS[videoIdx.current].id,
+          playerVars: { autoplay: 1, start: elapsed, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
           events: {
             onReady: (e) => e.target.playVideo(),
+            onStateChange: (e) => {
+              if (e.data === window.YT.PlayerState.ENDED) {
+                videoIdx.current = (videoIdx.current + 1) % PURPLE_CAT_VIDEOS.length
+                e.target.loadVideoById(PURPLE_CAT_VIDEOS[videoIdx.current].id)
+              }
+            },
           },
         })
       }
