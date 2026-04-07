@@ -4,6 +4,7 @@ import {
   FULL_PATH,
   buildSVGPath,
   getTrajectoryPoint,
+  MILESTONES, LAUNCH_MS, MISSION_MS,
 } from '../lib/mission.js'
 
 
@@ -24,6 +25,29 @@ export default function MissionCanvas({ progress, launched, landed }) {
   )
 
   const dot = getTrajectoryPoint(launched ? 0.04 + progress * 0.96 : 0.04)
+
+  // Reentry marker — placed visually on the return path just outside Earth's
+  // atmosphere glow (76 mi is invisible at Earth–Moon scale, so we nudge it out)
+  const reentryPt = useMemo(() => getTrajectoryPoint(0.97), [])
+
+  // Milestone dots along trajectory (skip ones that overlap Earth/Moon or have custom markers)
+  const SKIP = new Set(['launch', 'orbit', 'splash', 'reentry'])
+  const now = Date.now()
+  const milestoneDots = useMemo(() =>
+    MILESTONES
+      .filter(m => !SKIP.has(m.id))
+      .map(m => {
+        const p = (m.ms - LAUNCH_MS) / MISSION_MS
+        const t = 0.04 + p * 0.96
+        const pt = getTrajectoryPoint(t)
+        const past = m.ms <= now
+        // Label offset: outbound path (above centre) → label above; return path → below
+        const onReturn = t > 0.68
+        return { ...m, pt, past, onReturn }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [Math.round(progress * 500)]
+  )
 
   return (
     <div style={{ position: 'relative', userSelect: 'none' }}>
@@ -129,6 +153,32 @@ export default function MissionCanvas({ progress, launched, landed }) {
         <text x="500" y="258" textAnchor="middle"
           fill="rgba(255,255,255,0.05)" fontSize="9" letterSpacing="3"
           fontFamily="'JetBrains Mono', monospace">RETURN</text>
+
+        {/* ── Milestone dots ── */}
+        {milestoneDots.map(m => (
+          <g key={m.id}>
+            <circle cx={m.pt.x} cy={m.pt.y} r="2.5"
+              fill={m.past ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.45)'} />
+            <text
+              x={m.pt.x} y={m.pt.y + (m.onReturn ? 18 : -12)}
+              textAnchor="middle"
+              fill={m.past ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)'}
+              fontSize="10" letterSpacing="1.5"
+              fontFamily="'JetBrains Mono', monospace"
+            >{m.short.toUpperCase()}</text>
+          </g>
+        ))}
+
+        {/* ── Reentry marker ── */}
+        <g transform={`translate(${reentryPt.x}, ${reentryPt.y})`}>
+          <circle cx="0" cy="0" r="3.5" fill="none"
+            stroke="rgba(255,120,50,0.6)" strokeWidth="1" />
+          <circle cx="0" cy="0" r="1.5" fill="rgba(255,120,50,0.8)" />
+        </g>
+        <text
+          x={reentryPt.x + 8} y={reentryPt.y + 3}
+          fill="rgba(255,120,50,0.6)" fontSize="8" letterSpacing="1.5"
+          fontFamily="'JetBrains Mono', monospace">REENTRY</text>
 
         {/* ── Orion spacecraft ── */}
         {launched && !landed && (

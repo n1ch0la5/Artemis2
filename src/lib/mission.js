@@ -1,7 +1,7 @@
 // ─── MISSION CONSTANTS ────────────────────────────────────────────────────────
 
 export const LAUNCH_MS     = new Date('2026-04-01T22:24:00Z').getTime()
-export const SPLASHDOWN_MS = new Date('2026-04-10T22:24:00Z').getTime()
+export const SPLASHDOWN_MS = new Date('2026-04-11T00:07:00Z').getTime()
 export const MISSION_MS    = SPLASHDOWN_MS - LAUNCH_MS
 
 export const MILESTONES = [
@@ -12,8 +12,8 @@ export const MILESTONES = [
   { id: 'approach', label: 'Lunar Approach',    short: 'Approach', ms: new Date('2026-04-05T20:00:00Z').getTime() },
   { id: 'flyby',    label: 'Closest Approach',  short: 'Flyby',    ms: new Date('2026-04-06T22:00:00Z').getTime() },
   { id: 'return',   label: 'Return Leg',        short: 'Return',   ms: new Date('2026-04-07T06:00:00Z').getTime() },
-  { id: 'reentry',  label: 'Reentry',           short: 'Reentry',  ms: new Date('2026-04-10T18:00:00Z').getTime() },
-  { id: 'splash',   label: 'Splashdown',        short: 'Splash',   ms: new Date('2026-04-10T22:24:00Z').getTime() },
+  { id: 'reentry',  label: 'Reentry',           short: 'Reentry',  ms: new Date('2026-04-10T23:53:00Z').getTime() },
+  { id: 'splash',   label: 'Splashdown',        short: 'Splash',   ms: new Date('2026-04-11T00:07:00Z').getTime() },
 ]
 
 // ─── TRAJECTORY MATH ─────────────────────────────────────────────────────────
@@ -27,17 +27,21 @@ export const MOON  = { x: 895, y: 130, r: 24 }
 const LOOP_R = 42
 
 // Outbound cubic bezier  (Earth → start of Moon loop, above centreline)
+// Loop sweep uses ±70°; control-point tangents match the arc tangent at the junction
+// so the curve is C1-continuous (no visible kink).
+const LOOP_DEG = 70
+const LOOP_RAD = LOOP_DEG * Math.PI / 180
 const OB = [
   { x: 105, y: 130 },
   { x: 310, y: 16  },
-  { x: 680, y: 16  },
-  { x: 919, y: 96  }, // = MOON + LOOP_R at -55°
+  { x: 672, y: 5   },
+  { x: Math.round(MOON.x + LOOP_R * Math.cos(-LOOP_RAD)), y: Math.round(MOON.y + LOOP_R * Math.sin(-LOOP_RAD)) },
 ]
 
 // Return cubic bezier  (end of Moon loop → Earth, below centreline)
 const RET = [
-  { x: 919, y: 164 }, // = MOON + LOOP_R at +55°
-  { x: 680, y: 244 },
+  { x: Math.round(MOON.x + LOOP_R * Math.cos(LOOP_RAD)), y: Math.round(MOON.y + LOOP_R * Math.sin(LOOP_RAD)) },
+  { x: 672, y: 255 },
   { x: 310, y: 244 },
   { x: 105, y: 130 },
 ]
@@ -69,9 +73,9 @@ export function getTrajectoryPoint(t) {
     return cbez(OB[0], OB[1], OB[2], OB[3], u / 0.56)
   }
 
-  // Moon loop (far-side pass): sweep -55° → +55°
+  // Moon loop (far-side pass): sweep -70° → +70°
   if (u < 0.68) {
-    const a = (-55 + ((u - 0.56) / 0.12) * 110) * (Math.PI / 180)
+    const a = -LOOP_RAD + ((u - 0.56) / 0.12) * 2 * LOOP_RAD
     return { x: MOON.x + LOOP_R * Math.cos(a), y: MOON.y + LOOP_R * Math.sin(a) }
   }
 
@@ -108,18 +112,18 @@ export function getMissionProgress(now = Date.now()) {
  * the correct position along the curved bezier path.
  */
 const MAX_DIST = 244_000  // approximate max distance at lunar flyby (miles)
+const FLYBY_TIME = (MILESTONES.find(m => m.id === 'flyby').ms - LAUNCH_MS) / MISSION_MS
 export function distanceToTrajectoryT(distMiles, timeProgress) {
   const frac = Math.min(1, Math.max(0, distMiles / MAX_DIST))
 
-  // Determine if outbound or return based on time progress
-  const pastFlyby = timeProgress > 0.69
+  // Use flyby milestone time to determine leg (not a hardcoded threshold)
+  const pastFlyby = timeProgress > FLYBY_TIME
 
   if (!pastFlyby) {
-    // Outbound: map distance fraction to t in [0.04, 0.62]
-    // Use frac to lerp x between Earth and Moon
+    // Outbound + moon loop: map distance fraction to t in [0.04, 0.70]
     const targetX = EARTH.x + frac * (MOON.x - EARTH.x)
     // Binary search for t that gives us this x
-    let lo = 0.04, hi = 0.62
+    let lo = 0.04, hi = 0.70
     for (let i = 0; i < 20; i++) {
       const mid = (lo + hi) / 2
       const pt = getTrajectoryPoint(mid)
@@ -127,10 +131,10 @@ export function distanceToTrajectoryT(distMiles, timeProgress) {
     }
     return (lo + hi) / 2
   } else {
-    // Return: map distance fraction (decreasing) to t in [0.70, 1.0]
+    // Return: map distance fraction (decreasing) to t in [0.68, 1.0]
     const targetX = EARTH.x + frac * (MOON.x - EARTH.x)
     // On return leg, x decreases as t increases
-    let lo = 0.70, hi = 1.0
+    let lo = 0.68, hi = 1.0
     for (let i = 0; i < 20; i++) {
       const mid = (lo + hi) / 2
       const pt = getTrajectoryPoint(mid)
