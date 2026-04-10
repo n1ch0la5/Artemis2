@@ -284,7 +284,7 @@ export default function MissionCanvas({ progress, launched, landed }) {
           position:    'absolute',
           left:        `${(dot.x / 1000) * 100}%`,
           top:         `${(dot.y / 260) * 100}%`,
-          transform:   'translate(-50%, -230%)',
+          transform:   'translate(-50%, 80%)',
           fontSize:    9,
           letterSpacing: '2.5px',
           color:       '#F5C842',
