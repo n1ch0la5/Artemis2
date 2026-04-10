@@ -22,7 +22,21 @@ export default function MissionCanvas({ progress, launched, landed }) {
   // Split the path into: completed (gold) + future (ghost).
   // progress ∈ [0,1].  The orbit segment occupies 0–0.04 of t,
   // so we clamp the trail to start from 0.04.
-  const trailEnd   = 0.04 + progress * 0.96
+  // Map ship progress so it reaches the reentry dot at the actual reentry time
+  const REENTRY_T = 0.97
+  const reentryFrac = (MILESTONES.find(m => m.id === 'reentry').ms - LAUNCH_MS) / MISSION_MS
+  let shipT = 0.04
+  if (launched) {
+    if (progress <= reentryFrac) {
+      shipT = 0.04 + (progress / reentryFrac) * (REENTRY_T - 0.04) // 0.04→REENTRY_T
+    } else {
+      const past = (progress - reentryFrac) / (1 - reentryFrac)
+      shipT = REENTRY_T + past * (1 - REENTRY_T)                   // REENTRY_T→1.0
+    }
+  }
+  const dot = getTrajectoryPoint(shipT)
+
+  const trailEnd   = shipT
   const trailPath  = useMemo(
     () => launched ? buildSVGPath(0.04, trailEnd, 160) : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -34,11 +48,9 @@ export default function MissionCanvas({ progress, launched, landed }) {
     [Math.round(progress * 500)]
   )
 
-  const dot = getTrajectoryPoint(launched ? 0.04 + progress * 0.96 : 0.04)
-
   // Reentry marker — placed visually on the return path just outside Earth's
   // atmosphere glow (76 mi is invisible at Earth–Moon scale, so we nudge it out)
-  const reentryPt = useMemo(() => getTrajectoryPoint(0.97), [])
+  const reentryPt = useMemo(() => getTrajectoryPoint(REENTRY_T), [])
   const splashPt  = useMemo(() => getTrajectoryPoint(0.995), [])
 
   // Milestone dots along trajectory (skip ones that overlap Earth/Moon or have custom markers)
