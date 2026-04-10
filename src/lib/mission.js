@@ -16,6 +16,13 @@ export const MILESTONES = [
   { id: 'splash',   label: 'Splashdown',        short: 'Splash',   ms: new Date('2026-04-11T00:07:00Z').getTime() },
 ]
 
+// ─── REENTRY SUB-STAGES ──────────────────────────────────────────────────────
+export const REENTRY_STAGES = [
+  { id: 'sm-sep',  label: 'SM Separation',    ms: new Date('2026-04-10T23:33:00Z').getTime() },
+  { id: 'entry',   label: 'Entry Interface',  ms: new Date('2026-04-10T23:53:00Z').getTime() },
+  { id: 'blackout',label: 'Comm Blackout',     ms: new Date('2026-04-10T23:59:00Z').getTime(), duration: '~6 min' },
+]
+
 // ─── TRAJECTORY MATH ─────────────────────────────────────────────────────────
 // SVG viewBox: 0 0 1000 260
 // Earth centre:  (105, 130)

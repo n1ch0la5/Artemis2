@@ -1,14 +1,24 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   EARTH, MOON,
   FULL_PATH,
   buildSVGPath,
   getTrajectoryPoint,
   MILESTONES, LAUNCH_MS, MISSION_MS,
+  REENTRY_STAGES, pad,
 } from '../lib/mission.js'
 
+function formatTimeEDT(ms) {
+  const d = new Date(ms)
+  let h = d.getUTCHours() - 4
+  if (h < 0) h += 24
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${pad(d.getUTCMinutes())} ${ampm}`
+}
 
 export default function MissionCanvas({ progress, launched, landed }) {
+  const [reentryOpen, setReentryOpen] = useState(false)
   // Split the path into: completed (gold) + future (ghost).
   // progress ∈ [0,1].  The orbit segment occupies 0–0.04 of t,
   // so we clamp the trail to start from 0.04.
@@ -29,6 +39,7 @@ export default function MissionCanvas({ progress, launched, landed }) {
   // Reentry marker — placed visually on the return path just outside Earth's
   // atmosphere glow (76 mi is invisible at Earth–Moon scale, so we nudge it out)
   const reentryPt = useMemo(() => getTrajectoryPoint(0.97), [])
+  const splashPt  = useMemo(() => getTrajectoryPoint(0.995), [])
 
   // Milestone dots along trajectory (skip ones that overlap Earth/Moon or have custom markers)
   const SKIP = new Set(['launch', 'orbit', 'splash', 'reentry'])
@@ -157,28 +168,40 @@ export default function MissionCanvas({ progress, launched, landed }) {
         {/* ── Milestone dots ── */}
         {milestoneDots.map(m => (
           <g key={m.id}>
-            <circle cx={m.pt.x} cy={m.pt.y} r="2.5"
+            <circle cx={m.pt.x} cy={m.pt.y} r="3"
               fill={m.past ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.45)'} />
             <text
-              x={m.pt.x} y={m.pt.y + (m.onReturn ? 18 : -12)}
+              x={m.pt.x} y={m.pt.y + (m.onReturn ? 20 : -14)}
               textAnchor="middle"
               fill={m.past ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)'}
-              fontSize="10" letterSpacing="1.5"
+              fontSize="12" letterSpacing="1.5"
               fontFamily="'JetBrains Mono', monospace"
             >{m.short.toUpperCase()}</text>
           </g>
         ))}
 
-        {/* ── Reentry marker ── */}
-        <g transform={`translate(${reentryPt.x}, ${reentryPt.y})`}>
-          <circle cx="0" cy="0" r="3.5" fill="none"
-            stroke="rgba(255,120,50,0.6)" strokeWidth="1" />
-          <circle cx="0" cy="0" r="1.5" fill="rgba(255,120,50,0.8)" />
+        {/* ── Reentry marker (clickable) ── */}
+        <g style={{ cursor: 'pointer' }} onClick={() => setReentryOpen(o => !o)}>
+          <g transform={`translate(${reentryPt.x}, ${reentryPt.y})`}>
+            <circle cx="0" cy="0" r="3.5" fill="none"
+              stroke="rgba(255,120,50,0.6)" strokeWidth="1" />
+            <circle cx="0" cy="0" r="1.5" fill="rgba(255,120,50,0.8)" />
+          </g>
+          <text
+            x={reentryPt.x + 8} y={reentryPt.y + 4}
+            fill="rgba(255,120,50,0.6)" fontSize="11" letterSpacing="1.5"
+            fontFamily="'JetBrains Mono', monospace">{'REENTRY ' + (reentryOpen ? '▾' : '▸')}</text>
         </g>
+
+        {/* ── Splashdown marker ── */}
+        <circle cx={splashPt.x} cy={splashPt.y} r="3"
+          fill={landed ? 'rgba(80,180,255,0.8)' : 'rgba(80,180,255,0.35)'} />
         <text
-          x={reentryPt.x + 8} y={reentryPt.y + 3}
-          fill="rgba(255,120,50,0.6)" fontSize="8" letterSpacing="1.5"
-          fontFamily="'JetBrains Mono', monospace">REENTRY</text>
+          x={splashPt.x} y={splashPt.y + 18}
+          textAnchor="middle"
+          fill={landed ? 'rgba(80,180,255,0.8)' : 'rgba(80,180,255,0.5)'}
+          fontSize="11" letterSpacing="1.5"
+          fontFamily="'JetBrains Mono', monospace">SPLASHDOWN</text>
 
         {/* ── Orion spacecraft ── */}
         {launched && !landed && (
@@ -199,12 +222,61 @@ export default function MissionCanvas({ progress, launched, landed }) {
           </g>
         )}
 
-        {/* ── Splashdown marker ── */}
+        {/* ── Splashdown wave ── */}
         {landed && (
-          <text x={EARTH.x} y={EARTH.y + 6} textAnchor="middle"
-            dominantBaseline="middle" fontSize="20">🌊</text>
+          <text x={splashPt.x} y={splashPt.y - 10} textAnchor="middle"
+            dominantBaseline="middle" fontSize="16">🌊</text>
         )}
       </svg>
+
+      {/* ── Reentry sub-stages popover ── */}
+      {reentryOpen && (
+        <div style={{
+          position: 'absolute',
+          left:  `${(reentryPt.x / 1000) * 100}%`,
+          top:   `${(reentryPt.y / 260) * 100}%`,
+          transform: 'translate(-20%, 12px)',
+          background: 'rgba(7,15,29,0.95)',
+          border: '1px solid rgba(255,120,50,0.25)',
+          borderRadius: 8,
+          padding: '10px 14px',
+          zIndex: 10,
+          whiteSpace: 'nowrap',
+          minWidth: 190,
+          backdropFilter: 'blur(8px)',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {REENTRY_STAGES.map(s => {
+            const sDone = s.ms <= Date.now()
+            const nextIdx = REENTRY_STAGES.indexOf(s) + 1
+            const sActive = sDone && (nextIdx >= REENTRY_STAGES.length || REENTRY_STAGES[nextIdx].ms > Date.now())
+            return (
+              <div key={s.id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '4px 0',
+                fontSize: 11,
+                color: sActive ? '#F5C842'
+                  : sDone ? 'rgba(255,255,255,0.4)'
+                  : 'rgba(255,255,255,0.6)',
+              }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: sActive ? '#F5C842'
+                    : sDone ? 'rgba(255,255,255,0.3)'
+                    : 'rgba(255,120,50,0.5)',
+                  flexShrink: 0,
+                }} />
+                <span>{s.label}</span>
+                <span style={{
+                  marginLeft: 'auto',
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.3)',
+                }}>{formatTimeEDT(s.ms)}{s.duration ? ` (${s.duration})` : ''}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Floating "ORION" label — positioned proportionally over the dot */}
       {launched && !landed && (

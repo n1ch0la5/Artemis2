@@ -4,6 +4,7 @@ import MissionCanvas from './components/MissionCanvas.jsx'
 import StatStrip     from './components/StatStrip.jsx'
 import Timeline      from './components/Timeline.jsx'
 import ReactionDock  from './components/ReactionDock.jsx'
+import Fireworks     from './components/Fireworks.jsx'
 import {
   LAUNCH_MS,
   SPLASHDOWN_MS,
@@ -95,6 +96,17 @@ export default function App() {
 
   const launched  = now >= LAUNCH_MS
   const landed    = now >= SPLASHDOWN_MS
+  const [showFireworks, setShowFireworks] = useState(false)
+  const [fireworksKey, setFireworksKey] = useState(0)
+
+  // Fire once on splashdown (localStorage gate)
+  useEffect(() => {
+    if (landed && !localStorage.getItem('fireworks_seen')) {
+      localStorage.setItem('fireworks_seen', '1')
+      setShowFireworks(true)
+      setFireworksKey(k => k + 1)
+    }
+  }, [landed])
   const progress  = getMissionProgress(now)
   const phaseIdx  = getCurrentPhaseIndex(now)
   const day       = launched ? Math.floor((now - LAUNCH_MS) / 86400000) + 1 : null
@@ -127,6 +139,7 @@ export default function App() {
       overflowX:   'hidden',
     }}>
       <Starfield />
+      {showFireworks && <Fireworks key={fireworksKey} duration={15000} />}
 
       {updateReady && (
         <div
