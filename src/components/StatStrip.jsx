@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { formatElapsed, formatCountdown, formatNum, MILESTONES } from '../lib/mission.js'
+import { formatElapsed, formatCountdown, formatNum, MILESTONES, LAUNCH_MS, SPLASHDOWN_MS } from '../lib/mission.js'
 
 export default function StatStrip({ now, launched, telemetry, phaseIdx, metric, setMetric }) {
   const [showNote, setShowNote] = useState(false)
-  const elapsed  = launched ? now - (new Date('2026-04-01T22:24:00Z').getTime()) : 0
+  const elapsed  = launched ? Math.min(now, SPLASHDOWN_MS) - LAUNCH_MS : 0
   const phase    = MILESTONES[Math.max(0, phaseIdx)]
   const next     = MILESTONES[Math.min(MILESTONES.length - 1, phaseIdx + 1)]
 
