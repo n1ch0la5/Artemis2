@@ -1,12 +1,12 @@
-# Artemis II Live Tracker
+# Artemis II Tracker Archive
 
-> A calm, live social tracker — see where Orion is, what happens next, and who else is watching.
+> An archived mission tracker for Artemis II with frozen social stats from the live run.
 
-**Stack:** React + Vite · Netlify (hosting + serverless) · Supabase (real-time presence & reactions)
+**Stack:** React + Vite · Netlify (hosting + serverless) · local archived social stats
 
 ---
 
-## Setup in ~20 minutes
+## Setup in ~5 minutes
 
 ### 1 — Clone and install
 
@@ -16,28 +16,21 @@ cd artemis2-tracker
 npm install
 ```
 
-### 2 — Supabase
-
-1. Create a free project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** and paste + run the contents of `supabase/schema.sql`
-3. Grab your **Project URL** and **anon/public key** from Settings → API
-
-### 3 — Environment variables
+### 2 — Environment variables
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in:
+Fill in the optional NASA endpoint if you have one:
 
 ```
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
+NASA_AROW_URL=https://example.com/arow.json
 ```
 
-The `NASA_AROW_URL` is optional — the app falls back to calculated estimates if it's blank.
+If `NASA_AROW_URL` is blank, the app falls back to calculated estimates.
 
-### 4 — Run locally
+### 3 — Run locally
 
 ```bash
 npm run dev
@@ -45,7 +38,7 @@ npm run dev
 npx netlify dev
 ```
 
-### 5 — Deploy to Netlify
+### 4 — Deploy to Netlify
 
 ```bash
 # Option A: GitHub integration (recommended)
@@ -62,11 +55,9 @@ Set your env vars in **Netlify → Site settings → Environment variables**:
 
 | Key | Value |
 |-----|-------|
-| `VITE_SUPABASE_URL` | your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
 | `NASA_AROW_URL` | NASA AROW endpoint (optional) |
 
-### 6 — Custom domain
+### 5 — Custom domain
 
 Buy a domain (`artemis2mission.live`, `whereorion.com`, etc.) and point it at Netlify.
 Netlify provisions HTTPS automatically.
@@ -89,17 +80,15 @@ Drop two files into `/public`:
 │   └── functions/
 │       └── arow.js          ← NASA AROW proxy (avoids CORS)
 ├── src/
-│   ├── App.jsx              ← Root: clock, AROW polling, presence
+│   ├── App.jsx              ← Root: clock, archive banner, fireworks replay
 │   ├── lib/
 │   │   ├── mission.js       ← Trajectory math, phase data, estimates
-│   │   └── supabase.js      ← Presence, broadcast, DB reactions
+│   │   └── archiveStats.js  ← Frozen emoji totals + peak viewer count
 │   └── components/
 │       ├── MissionCanvas.jsx ← SVG trajectory (Earth → Moon → Earth)
 │       ├── StatStrip.jsx    ← Live telemetry row
 │       ├── Timeline.jsx     ← Mission milestones
-│       └── ReactionDock.jsx ← Emoji reactions + viewer count
-├── supabase/
-│   └── schema.sql           ← Run once to set up Supabase
+│       └── ReactionDock.jsx ← Frozen reaction stats + music dock
 └── netlify.toml
 ```
 
@@ -120,3 +109,11 @@ Adjust the field name mapping at the top of that file once you see the real resp
 - [ ] Tweet with `#Artemis2` — journalists monitor that tag
 - [ ] "Show HN" on Hacker News
 - [ ] Tag `@NASA` and `@NASAArtemis`
+
+---
+
+## Archive notes
+
+- Social stats are frozen from the live mission run.
+- Peak live viewers are recorded locally in `src/lib/archiveStats.js`.
+- Splashdown fireworks no longer auto-play; they can be replayed manually from the archive banner.

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { formatNum } from '../lib/mission.js'
 import {
-  fetchReactionCounts,
-  incrementReaction,
-  broadcastReaction,
-  subscribeReactions,
-} from '../lib/supabase.js'
+  ARCHIVE_DATE_LABEL,
+  ARCHIVED_PEAK_VIEWERS,
+  ARCHIVED_REACTION_COUNTS,
+  ARCHIVED_TOTAL_REACTIONS,
+} from '../lib/archiveStats.js'
 
 const EMOJIS = ['👀', '🚀', '🌕', '❤️', '🙌', '✨']
 
@@ -17,15 +17,11 @@ const PURPLE_CAT_VIDEOS = [
 const PURPLE_CAT_EPOCH_MS   = 1735689600000  // 2025-01-01T00:00:00Z — shared virtual start
 const PURPLE_CAT_LINK       = 'https://www.youtube.com/@PurrpleCat'
 
-export default function ReactionDock({ viewers }) {
-  const [counts,   setCounts]   = useState({})
-  const [floaters, setFloaters] = useState([])
-  const [ticker,   setTicker]   = useState(0)   // reactions in last 60s
+export default function ReactionDock() {
   const [musicOn,   setMusicOn]   = useState(false)
   const [rockyShoutBurst, setRockyShoutBurst] = useState(0)
   const playerRef = useRef(null)
   const videoIdx  = useRef(0)                    // current index in PURPLE_CAT_VIDEOS
-  const recentTs = useRef([])                    // timestamps of recent reactions
   const showRockyShout = rockyShoutBurst > 0
 
   // Load YouTube IFrame API once and create a persistent DOM node for the player
@@ -87,34 +83,6 @@ export default function ReactionDock({ viewers }) {
     }
   }, [musicOn])
 
-  // Load persisted counts on mount
-  useEffect(() => {
-    fetchReactionCounts().then(data => setCounts(data))
-  }, [])
-
-  // Subscribe to live broadcasts from other users
-  useEffect(() => {
-    const unsub = subscribeReactions((emoji, ts) => {
-      // Update local counts
-      setCounts(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }))
-      // Spawn a floater
-      spawnFloat(emoji)
-      // Track for ticker
-      recentTs.current.push(ts)
-    })
-    return unsub
-  }, [])
-
-  // Ticker: count reactions in the last 60 seconds
-  useEffect(() => {
-    const id = setInterval(() => {
-      const cutoff = Date.now() - 60_000
-      recentTs.current = recentTs.current.filter(ts => ts > cutoff)
-      setTicker(recentTs.current.length)
-    }, 3000)
-    return () => clearInterval(id)
-  }, [])
-
   useEffect(() => {
     if (!rockyShoutBurst) return undefined
 
@@ -122,49 +90,8 @@ export default function ReactionDock({ viewers }) {
     return () => window.clearTimeout(timeoutId)
   }, [rockyShoutBurst])
 
-  const spawnFloat = useCallback((emoji) => {
-    const id = Date.now() + Math.random()
-    setFloaters(f => [...f, { id, emoji, x: 15 + Math.random() * 70 }])
-    setTimeout(() => setFloaters(f => f.filter(e => e.id !== id)), 2600)
-  }, [])
-
-  const handleReact = async (emoji) => {
-    // Optimistic local update
-    setCounts(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }))
-    spawnFloat(emoji)
-    recentTs.current.push(Date.now())
-
-    // Persist + broadcast (fire-and-forget)
-    try {
-      await Promise.all([
-        incrementReaction(emoji),
-        broadcastReaction(emoji),
-      ])
-    } catch (err) {
-      console.warn('reaction error', err)
-    }
-  }
-
-  const total = Object.values(counts).reduce((a, b) => a + b, 0)
-
   return (
     <>
-      {/* Floating emoji bursts */}
-      {floaters.map(e => (
-        <div key={e.id} style={{
-          position:     'fixed',
-          bottom:       80,
-          left:         `${e.x}%`,
-          fontSize:     26,
-          lineHeight:   1,
-          animation:    'reactionRise 2.6s ease-out forwards',
-          pointerEvents: 'none',
-          zIndex:       300,
-        }}>
-          {e.emoji}
-        </div>
-      ))}
-
       <div style={{
         background:   '#070F1D',
         border:       '1px solid rgba(255,255,255,0.04)',
@@ -180,23 +107,32 @@ export default function ReactionDock({ viewers }) {
           flexWrap:       'wrap',
           gap:            8,
         }}>
-          <div style={{ fontSize: 13, color: '#4A6A88', letterSpacing: '1px' }}>
-            <span style={{ color: '#2AAA64' }}>●</span>{' '}
-            <span style={{ color: '#2A4060' }}>
-              {formatNum(viewers)}
-            </span>{' '}
-            watching now
+          <div style={{
+            fontSize:      13,
+            color:         '#6D8CAB',
+            letterSpacing: '1px',
+          }}>
+            Peak live viewers: {formatNum(ARCHIVED_PEAK_VIEWERS)}
           </div>
-          {ticker > 0 && (
-            <div style={{
-              fontSize:      12,
-              color:         '#1A2E44',
-              letterSpacing: '0.5px',
-              animation:     'fadeSlideUp .3s ease',
-            }}>
-              {ticker} reacted in the last minute
-            </div>
-          )}
+          <div style={{ fontSize: 12, color: '#4A6A88', letterSpacing: '0.5px' }}>
+            <span style={{ color: '#F5C842' }}>◌</span>{' '}
+            archived social stats
+          </div>
+        </div>
+
+        <div style={{
+          marginBottom:   16,
+          borderRadius:   12,
+          border:         '1px solid rgba(90,154,224,0.08)',
+          background:     'rgba(255,255,255,0.02)',
+          padding:        '12px 14px',
+          textAlign:      'center',
+          fontSize:       12,
+          color:          '#6D8CAB',
+          letterSpacing:  '0.4px',
+          lineHeight:     1.7,
+        }}>
+          Archived after splashdown on {ARCHIVE_DATE_LABEL}. Emoji totals and viewer counts are frozen.
         </div>
 
         {/* Emoji buttons */}
@@ -207,27 +143,21 @@ export default function ReactionDock({ viewers }) {
           justifyContent: 'center',
         }}>
           {EMOJIS.map(emoji => (
-            <button
+            <div
               key={emoji}
-              onClick={() => handleReact(emoji)}
               style={{
                 background:   'rgba(255,255,255,0.03)',
                 border:       '1px solid rgba(255,255,255,0.05)',
                 borderRadius: 10,
                 padding:      '10px 14px',
-                cursor:       'pointer',
                 color:        'white',
                 display:      'flex',
                 flexDirection:'column',
                 alignItems:   'center',
                 gap:          4,
                 minWidth:     56,
-                transition:   'transform .1s ease, background .1s ease',
+                cursor:       'default',
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-              onMouseDown ={e => e.currentTarget.style.transform = 'scale(.88)'}
-              onMouseUp   ={e => e.currentTarget.style.transform = 'scale(1)'}
             >
               <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
               <span style={{
@@ -236,23 +166,21 @@ export default function ReactionDock({ viewers }) {
                 fontFamily:    "'JetBrains Mono', monospace",
                 minHeight:     12,
               }}>
-                {counts[emoji] > 0 ? formatNum(counts[emoji]) : ''}
+                {formatNum(ARCHIVED_REACTION_COUNTS[emoji] || 0)}
               </span>
-            </button>
+            </div>
           ))}
         </div>
 
-        {total > 0 && (
-          <div style={{
-            textAlign:     'center',
-            marginTop:     14,
-            fontSize:      12,
-            color:         '#4A6A88',
-            letterSpacing: '1px',
-          }}>
-            {formatNum(total)} total reactions worldwide
-          </div>
-        )}
+        <div style={{
+          textAlign:     'center',
+          marginTop:     14,
+          fontSize:      12,
+          color:         '#4A6A88',
+          letterSpacing: '1px',
+        }}>
+          {formatNum(ARCHIVED_TOTAL_REACTIONS)} total reactions worldwide
+        </div>
 
         {/* Music toggle */}
         <div style={{

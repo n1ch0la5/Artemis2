@@ -1,10 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Starfield     from './components/Starfield.jsx'
 import MissionCanvas from './components/MissionCanvas.jsx'
 import StatStrip     from './components/StatStrip.jsx'
 import Timeline      from './components/Timeline.jsx'
 import ReactionDock  from './components/ReactionDock.jsx'
 import Fireworks     from './components/Fireworks.jsx'
+import {
+  ARCHIVE_DATE_LABEL,
+  ARCHIVE_SOCIAL_NOTE,
+  ARCHIVE_STATUS_LABEL,
+} from './lib/archiveStats.js'
 import {
   LAUNCH_MS,
   SPLASHDOWN_MS,
@@ -15,7 +20,6 @@ import {
   estimateVelocity,
   distanceToTrajectoryT,
 } from './lib/mission.js'
-import { joinPresence } from './lib/supabase.js'
 
 // ─── NASA AROW polling ────────────────────────────────────────────────────────
 async function fetchAROW() {
@@ -40,10 +44,9 @@ export default function App() {
   const [telemetry, setTelemetry] = useState(() => {
     try { return JSON.parse(localStorage.getItem('arow_cache')) } catch { return null }
   })
-  const [viewers,   setViewers]  = useState(1)
   const [metric,    setMetric]   = useState(() => localStorage.getItem('metric') === 'true')
   const [updateReady, setUpdateReady] = useState(false)
-  const viewerId = useRef(Math.random().toString(36).slice(2))
+  const [showArchiveModal, setShowArchiveModal] = useState(true)
 
   // Clock tick
   useEffect(() => {
@@ -67,12 +70,6 @@ export default function App() {
     const id = setInterval(check, 300_000)
     check()
     return () => clearInterval(id)
-  }, [])
-
-  // Supabase presence
-  useEffect(() => {
-    const cleanup = joinPresence(viewerId.current, setViewers)
-    return cleanup
   }, [])
 
   // AROW polling (every 60s)
@@ -99,14 +96,18 @@ export default function App() {
   const [showFireworks, setShowFireworks] = useState(false)
   const [fireworksKey, setFireworksKey] = useState(0)
 
-  // Fire once on splashdown (localStorage gate)
+  const replayFireworks = useCallback(() => {
+    setFireworksKey(k => k + 1)
+    setShowFireworks(true)
+  }, [])
+
   useEffect(() => {
-    if (landed && !localStorage.getItem('fireworks_seen')) {
-      localStorage.setItem('fireworks_seen', '1')
-      setShowFireworks(true)
-      setFireworksKey(k => k + 1)
-    }
-  }, [landed])
+    if (!showFireworks) return undefined
+
+    const timeoutId = window.setTimeout(() => setShowFireworks(false), 20000)
+    return () => window.clearTimeout(timeoutId)
+  }, [showFireworks, fireworksKey])
+
   const progress  = getMissionProgress(now)
   const phaseIdx  = getCurrentPhaseIndex(now)
   const day       = launched ? Math.floor((now - LAUNCH_MS) / 86400000) + 1 : null
@@ -174,7 +175,7 @@ export default function App() {
             <span style={{ color: '#2AAA64', marginLeft: 12 }}>● LIVE</span>
           )}
           {landed && (
-            <span style={{ color: '#5A8AAA', marginLeft: 12 }}>· MISSION COMPLETE</span>
+            <span style={{ color: '#5A8AAA', marginLeft: 12 }}>· MISSION COMPLETE · ARCHIVED</span>
           )}
         </div>
 
@@ -193,6 +194,30 @@ export default function App() {
           <em style={{ fontStyle: 'italic', fontWeight: 400 }}>Orion</em>{' '}
           right now?
         </h1>
+
+        <div style={{
+          display:        'flex',
+          justifyContent: 'center',
+          marginBottom:   26,
+        }}>
+          <button
+            type="button"
+            onClick={() => setShowArchiveModal(true)}
+            style={{
+              background:   'rgba(255,255,255,0.03)',
+              border:       '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 999,
+              padding:      '8px 14px',
+              cursor:       'pointer',
+              color:        '#8EABC5',
+              fontSize:     12,
+              letterSpacing:'0.9px',
+              fontFamily:   "'JetBrains Mono', monospace",
+            }}
+          >
+            Archive note
+          </button>
+        </div>
 
         {/* ── Trajectory ── */}
         <div style={{ marginBottom: 28 }}>
@@ -224,7 +249,7 @@ export default function App() {
         <Timeline now={now} phaseIdx={phaseIdx} />
 
         {/* ── Social reactions ── */}
-        <ReactionDock viewers={viewers} />
+        <ReactionDock />
 
         {/* ── Ad ── */}
         <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 8 }}>
@@ -277,6 +302,138 @@ export default function App() {
           </span>
         </div>
       </div>
+
+      {showArchiveModal && (
+        <div
+          onClick={() => setShowArchiveModal(false)}
+          style={{
+            position:   'fixed',
+            inset:      0,
+            zIndex:     650,
+            background: 'rgba(2,6,14,0.72)',
+            display:    'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding:    20,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+            style={{
+              width:        'min(560px, 100%)',
+              borderRadius: 16,
+              border:       '1px solid rgba(90,154,224,0.18)',
+              background:   'linear-gradient(180deg, rgba(13,21,38,0.98), rgba(7,15,29,0.98))',
+              boxShadow:    '0 28px 70px rgba(0,0,0,0.42)',
+              padding:      '22px 22px 20px',
+            }}
+          >
+            <div style={{
+              display:        'flex',
+              justifyContent: 'space-between',
+              alignItems:     'flex-start',
+              gap:            16,
+              marginBottom:   12,
+            }}>
+              <div>
+                <div style={{
+                  fontSize:      11,
+                  letterSpacing: '2.4px',
+                  color:         '#6D8CAB',
+                  textTransform: 'uppercase',
+                  marginBottom:  8,
+                }}>
+                  {ARCHIVE_STATUS_LABEL}
+                </div>
+                <div style={{
+                  fontFamily:    "'Cormorant Garamond', serif",
+                  fontSize:      'clamp(28px, 4vw, 36px)',
+                  color:         '#EBF2FA',
+                  lineHeight:    1,
+                }}>
+                  Mission archive
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowArchiveModal(false)}
+                aria-label="Close archive note"
+                style={{
+                  background:   'transparent',
+                  border:       'none',
+                  color:        '#6D8CAB',
+                  cursor:       'pointer',
+                  fontSize:     24,
+                  lineHeight:   1,
+                  padding:      0,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{
+              fontSize:    13,
+              lineHeight:  1.8,
+              color:       '#9AB6D1',
+              marginBottom: 16,
+            }}>
+              {ARCHIVE_SOCIAL_NOTE} Fireworks originally ran at splashdown on {ARCHIVE_DATE_LABEL}.
+            </div>
+
+            <div style={{
+              display:        'flex',
+              flexWrap:       'wrap',
+              gap:            10,
+              alignItems:     'center',
+            }}>
+              <button
+                type="button"
+                onClick={replayFireworks}
+                style={{
+                  background:   'rgba(255,255,255,0.04)',
+                  border:       '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 999,
+                  padding:      '8px 14px',
+                  cursor:       'pointer',
+                  color:        '#D6E4F0',
+                  fontSize:     12,
+                  letterSpacing:'0.8px',
+                  fontFamily:   "'JetBrains Mono', monospace",
+                }}
+              >
+                Replay splashdown fireworks
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowArchiveModal(false)}
+                style={{
+                  background:   'transparent',
+                  border:       '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 999,
+                  padding:      '8px 14px',
+                  cursor:       'pointer',
+                  color:        '#6D8CAB',
+                  fontSize:     12,
+                  letterSpacing:'0.8px',
+                  fontFamily:   "'JetBrains Mono', monospace",
+                }}
+              >
+                Close
+              </button>
+              <span style={{
+                fontSize:     11,
+                color:        '#5A7A94',
+                letterSpacing:'0.4px',
+              }}>
+                Optional keepsake, not automatic anymore
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
